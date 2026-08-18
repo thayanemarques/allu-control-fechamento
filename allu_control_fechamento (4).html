@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>allu · Control Fechamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --verde:#27AE60; --verde-d:#1E8A4C; --verde-l:#E9F7EF;
+  --dark:#2E2F39; --dark-2:#3A3B47; --off:#F4F4EF;
+  --branco:#FFFFFF; --linha:#E7E7E1; --linha-2:#EFEFEA;
+  --txt:#2E2F39; --txt-2:#6B6C78; --txt-3:#9A9BA6;
+  --azul:#2D7FF9; --azul-l:#E8F0FE;
+  --amarelo:#E2A32B; --amarelo-l:#FBF3E1;
+  --vermelho:#E23D3D; --vermelho-l:#FCEAEA;
+  --preto:#2E2F39; --cinza-l:#EDEDE8;
+  --sombra:0 1px 2px rgba(46,47,57,.04),0 4px 16px rgba(46,47,57,.06);
+  --sombra-2:0 8px 32px rgba(46,47,57,.12);
+  --r:14px; --r-s:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  background:var(--off); color:var(--txt);
+  font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--txt)}
+.mono{font-family:'DM Mono',monospace}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#D6D6CF;border-radius:8px;border:2px solid var(--off)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- LAYOUT ---------- */
+.app{display:grid;grid-template-columns:248px 1fr;height:100vh;overflow:hidden}
+
+/* ---------- SIDEBAR ---------- */
+.side{background:var(--dark);color:#fff;display:flex;flex-direction:column;overflow:hidden}
+.brand{padding:22px 22px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.07)}
+.brand .logo{width:34px;height:34px;border-radius:9px;background:var(--verde);display:grid;place-items:center;font-weight:700;font-size:17px;flex:none}
+.brand .bt{font-weight:700;font-size:15px;letter-spacing:.2px;line-height:1.1}
+.brand .bs{font-size:10.5px;color:rgba(255,255,255,.5);letter-spacing:.6px;text-transform:uppercase;margin-top:2px}
+.nav{flex:1;overflow-y:auto;padding:14px 12px 24px}
+.nav .grp{font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:rgba(255,255,255,.34);padding:16px 12px 7px;font-weight:600}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:rgba(255,255,255,.72);font-weight:500;font-size:13.5px;margin-bottom:1px;transition:.13s;position:relative}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.on{background:var(--verde);color:#fff;box-shadow:0 3px 10px rgba(39,174,96,.35)}
+.nav a .ic{width:18px;text-align:center;flex:none;opacity:.9}
+.nav a .badge{margin-left:auto;background:var(--vermelho);color:#fff;font-size:10.5px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 5px}
+.nav a.on .badge{background:rgba(255,255,255,.25)}
+.side-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:rgba(255,255,255,.4)}
+
+/* ---------- TOPBAR ---------- */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.top{height:60px;background:var(--branco);border-bottom:1px solid var(--linha);display:flex;align-items:center;gap:14px;padding:0 24px;flex:none;z-index:20}
+.top .title{font-weight:700;font-size:16px;flex:none}
+.top .title small{display:block;font-weight:500;font-size:11px;color:var(--txt-3);letter-spacing:.3px}
+.search{margin-left:12px;flex:1;max-width:340px;position:relative}
+.search input{width:100%;background:var(--off);border:1px solid var(--linha);border-radius:10px;padding:9px 12px 9px 34px;outline:none;transition:.15s}
+.search input:focus{border-color:var(--verde);background:#fff}
+.search .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--txt-3)}
+.top .sp{flex:1}
+.selctrl{display:flex;align-items:center;gap:7px;background:var(--off);border:1px solid var(--linha);border-radius:10px;padding:7px 11px;font-weight:600;font-size:13px}
+.selctrl select{border:none;background:none;outline:none;font-weight:600;cursor:pointer}
+.selctrl .lbl{font-size:10px;color:var(--txt-3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.iconbtn{width:38px;height:38px;border-radius:10px;background:var(--off);border:1px solid var(--linha);display:grid;place-items:center;position:relative;transition:.13s}
+.iconbtn:hover{background:#fff;border-color:var(--verde)}
+.iconbtn .dot{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--vermelho);border:2px solid #fff}
+.perfil{display:flex;align-items:center;gap:9px;padding:5px 6px 5px 12px;border:1px solid var(--linha);border-radius:24px;background:var(--off)}
+.perfil select{border:none;background:none;outline:none;font-weight:600;font-size:13px;cursor:pointer}
+#userSelect{max-width:160px}
+.perfil .av{width:30px;height:30px;border-radius:50%;background:var(--verde);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12.5px}
+
+.content{flex:1;overflow-y:auto;padding:24px}
+.view{max-width:1280px;margin:0 auto;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- COMMON ---------- */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.page-head h1{font-size:22px;font-weight:700;letter-spacing:-.3px}
+.page-head p{color:var(--txt-2);font-size:13px;margin-top:3px}
+.card{background:var(--branco);border:1px solid var(--linha);border-radius:var(--r);box-shadow:var(--sombra)}
+.card-pad{padding:20px}
+.sec-title{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--txt-2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--verde);color:#fff;font-weight:600;font-size:13.5px;padding:9px 15px;border-radius:10px;transition:.13s;box-shadow:0 2px 8px rgba(39,174,96,.28)}
+.btn:hover{background:var(--verde-d)}
+.btn.ghost{background:var(--off);color:var(--txt);box-shadow:none;border:1px solid var(--linha)}
+.btn.ghost:hover{background:#fff;border-color:var(--verde);color:var(--verde-d)}
+.btn.sm{padding:7px 11px;font-size:12.5px}
+.btn.dark{background:var(--dark)}.btn.dark:hover{background:#1f2028}
+.btn-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--off);border:1px solid var(--linha);color:var(--txt);font-size:14px;margin-left:5px;transition:.12s;vertical-align:middle}
+.btn-icon:hover{background:#fff;border-color:var(--verde);color:var(--verde-d)}
+.btn-icon.danger:hover{border-color:var(--vermelho);color:var(--vermelho);background:#fff}
+.login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% -10%,rgba(39,174,96,.12),transparent),var(--off);padding:20px}
+.login-card{width:100%;max-width:380px;background:#fff;border:1px solid var(--linha);border-radius:20px;padding:34px 30px;box-shadow:0 20px 60px rgba(46,47,57,.12);text-align:center}
+.login-logo{width:52px;height:52px;border-radius:14px;background:var(--verde);color:#fff;font-weight:800;font-size:26px;display:grid;place-items:center;margin:0 auto 16px}
+.login-tt{font-weight:700;font-size:19px;color:var(--dark)}
+.login-sub{font-size:13.5px;color:var(--txt-2);margin:8px 0 20px;line-height:1.5}
+.login-card input{width:100%;padding:12px 14px;border:1px solid var(--linha);border-radius:11px;font-size:14px;margin-bottom:12px;outline:none;font-family:inherit}
+.login-card input:focus{border-color:var(--verde)}
+.login-card .btn{width:100%;justify-content:center;padding:12px}
+.login-note{font-size:12.5px;margin-top:14px;min-height:16px;line-height:1.45}
+.login-note.ok{color:var(--verde-d)}
+.login-note.err{color:var(--vermelho)}
+.login-foot{font-size:11.5px;color:var(--txt-2);margin-top:18px;line-height:1.45}
+.sync-info{color:var(--txt-2);font-size:11px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:var(--branco);border:1px solid var(--linha);border-radius:var(--r);padding:16px 17px;box-shadow:var(--sombra);position:relative;overflow:hidden}
+.kpi .k-l{font-size:11.5px;color:var(--txt-2);font-weight:600;letter-spacing:.2px}
+.kpi .k-v{font-size:27px;font-weight:700;margin-top:6px;letter-spacing:-.5px;line-height:1}
+.kpi .k-s{font-size:11.5px;margin-top:6px;color:var(--txt-3);font-weight:500}
+.kpi .k-tag{position:absolute;top:14px;right:14px;font-size:16px}
+.kpi.accent{background:linear-gradient(135deg,var(--verde) 0%,var(--verde-d) 100%);border-color:transparent;color:#fff}
+.kpi.accent .k-l,.kpi.accent .k-s{color:rgba(255,255,255,.82)}
+
+/* progress */
+.prog{height:10px;border-radius:20px;background:var(--cinza-l);overflow:hidden}
+.prog>span{display:block;height:100%;background:linear-gradient(90deg,var(--verde),var(--verde-d));border-radius:20px;transition:width .5s}
+.prog.big{height:14px}
+
+/* status pill */
+.st{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:12px;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.st .d{width:8px;height:8px;border-radius:50%;flex:none}
+.st.concluido{background:var(--verde-l);color:var(--verde-d)} .st.concluido .d{background:var(--verde)}
+.st.andamento{background:var(--azul-l);color:#1a5fc4} .st.andamento .d{background:var(--azul)}
+.st.aguardando{background:var(--amarelo-l);color:#a9741a} .st.aguardando .d{background:var(--amarelo)}
+.st.nao_iniciado{background:var(--cinza-l);color:var(--txt-2)} .st.nao_iniciado .d{background:#B9B9B0}
+.st.atrasado{background:var(--vermelho-l);color:#b62c2c} .st.atrasado .d{background:var(--vermelho)}
+.st.bloqueado{background:#E4E4E7;color:#3f3f46} .st.bloqueado .d{background:#3f3f46}
+
+.prio{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+.prio.alta{background:var(--vermelho-l);color:#b62c2c}
+.prio.media{background:var(--amarelo-l);color:#a9741a}
+.prio.baixa{background:var(--cinza-l);color:var(--txt-2)}
+
+.mat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px}
+.mat.alta{background:#F3E8FF;color:#7c3aed}
+.mat.media{background:var(--azul-l);color:#1a5fc4}
+.mat.baixa{background:var(--cinza-l);color:var(--txt-2)}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--linha);background:#fff;box-shadow:var(--sombra)}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+table.tbl th{background:var(--off);text-align:left;padding:11px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--txt-2);font-weight:700;border-bottom:1px solid var(--linha);position:sticky;top:0;white-space:nowrap}
+table.tbl td{padding:11px 14px;border-bottom:1px solid var(--linha-2);vertical-align:middle}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl tbody tr{transition:.1s}
+table.tbl tbody tr:hover{background:var(--verde-l)}
+table.tbl tr.clk{cursor:pointer}
+.cell-strong{font-weight:600}
+.cell-sub{color:var(--txt-3);font-size:11.5px}
+td.num{font-family:'DM Mono',monospace;text-align:right;white-space:nowrap}
+
+/* filters */
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filters select,.filters input{background:#fff;border:1px solid var(--linha);border-radius:9px;padding:8px 11px;outline:none;font-weight:500}
+.filters select:focus,.filters input:focus{border-color:var(--verde)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--linha);border-radius:20px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.12s}
+.chip:hover{border-color:var(--verde)}
+.chip.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.chip .n{background:rgba(0,0,0,.08);border-radius:10px;padding:0 6px;font-size:11px}
+.chip.on .n{background:rgba(255,255,255,.2)}
+
+/* grid helpers */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* gantt */
+.gantt{overflow-x:auto;background:#fff;border:1px solid var(--linha);border-radius:var(--r);box-shadow:var(--sombra)}
+.gantt-inner{min-width:820px}
+.gantt-row{display:grid;grid-template-columns:230px 1fr;border-bottom:1px solid var(--linha-2)}
+.gantt-row:last-child{border-bottom:none}
+.gantt-head{background:var(--off);position:sticky;top:0;z-index:2}
+.gantt-lbl{padding:10px 14px;border-right:1px solid var(--linha);font-size:12.5px;font-weight:600;display:flex;flex-direction:column;justify-content:center;gap:2px;overflow:hidden}
+.gantt-lbl small{font-weight:500;color:var(--txt-3);font-size:11px}
+.gantt-scale{display:flex;position:relative}
+.gantt-day{flex:1;text-align:center;font-size:10px;padding:8px 0;color:var(--txt-3);border-right:1px solid var(--linha-2);min-width:28px}
+.gantt-day.we{background:#faf9f4}
+.gantt-track{position:relative;height:44px}
+.gantt-cell{position:absolute;top:0;bottom:0;border-right:1px solid var(--linha-2)}
+.gantt-bar{position:absolute;top:11px;height:22px;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer}
+.gantt-today{position:absolute;top:0;bottom:0;width:2px;background:var(--vermelho);z-index:3}
+.gantt-today::after{content:'hoje';position:absolute;top:-16px;left:-11px;font-size:9px;color:var(--vermelho);font-weight:700}
+
+/* calendar */
+.cal{background:#fff;border:1px solid var(--linha);border-radius:var(--r);overflow:hidden;box-shadow:var(--sombra)}
+.cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:var(--off);border-bottom:1px solid var(--linha)}
+.cal-head div{padding:9px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--txt-2)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-cell{min-height:96px;border-right:1px solid var(--linha-2);border-bottom:1px solid var(--linha-2);padding:6px;font-size:12px;position:relative;overflow:hidden}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-cell.out{background:#faf9f4;color:var(--txt-3)}
+.cal-cell.today{background:var(--verde-l)}
+.cal-cell .dn{font-weight:700;font-size:12px;margin-bottom:4px}
+.cal-cell.today .dn{color:var(--verde-d)}
+.cal-ev{font-size:10.5px;padding:2px 6px;border-radius:5px;margin-bottom:3px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* notif panel */
+.notif-panel{position:fixed;top:60px;right:16px;width:360px;max-height:76vh;background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--sombra-2);z-index:60;overflow:hidden;display:none;flex-direction:column}
+.notif-panel.open{display:flex}
+.notif-head{padding:15px 18px;border-bottom:1px solid var(--linha);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.notif-list{overflow-y:auto;padding:8px}
+.notif-item{display:flex;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer;transition:.1s}
+.notif-item:hover{background:var(--off)}
+.notif-item .ni{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;font-size:15px}
+.notif-item .nt{font-weight:600;font-size:13px}
+.notif-item .nd{color:var(--txt-3);font-size:11.5px;margin-top:2px}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(30,31,38,.5);backdrop-filter:blur(3px);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:var(--off);border-radius:18px;width:100%;max-width:760px;box-shadow:var(--sombra-2);animation:pop .22s ease;overflow:hidden}
+.modal.sm{max-width:460px}
+@keyframes pop{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
+.modal-head{background:#fff;padding:20px 24px;border-bottom:1px solid var(--linha);display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.modal-head h2{font-size:18px;font-weight:700;letter-spacing:-.2px}
+.modal-head .mh-sub{color:var(--txt-3);font-size:12px;margin-top:3px;font-weight:500}
+.modal-x{width:34px;height:34px;border-radius:9px;background:var(--off);display:grid;place-items:center;flex:none;transition:.12s}
+.modal-x:hover{background:var(--vermelho-l);color:var(--vermelho)}
+.modal-body{padding:22px 24px;max-height:64vh;overflow-y:auto}
+.modal-foot{padding:15px 24px;background:#fff;border-top:1px solid var(--linha);display:flex;gap:10px;justify-content:flex-end}
+
+.field{margin-bottom:15px}
+.field label{display:block;font-size:11.5px;font-weight:700;color:var(--txt-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
+.field input,.field select,.field textarea{width:100%;background:#fff;border:1px solid var(--linha);border-radius:10px;padding:10px 12px;outline:none;transition:.13s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--verde);box-shadow:0 0 0 3px var(--verde-l)}
+.field textarea{resize:vertical;min-height:64px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:640px){.field-row,.field-row-3{grid-template-columns:1fr}}
+
+.detail-block{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:16px;margin-bottom:14px}
+.detail-block h4{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--txt-2);margin-bottom:10px;font-weight:700}
+.dl{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.dl .di .k{font-size:11px;color:var(--txt-3);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.dl .di .v{font-weight:600;margin-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{background:var(--off);border:1px solid var(--linha);border-radius:7px;padding:3px 9px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace}
+.hist-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px dashed var(--linha)}
+.hist-item:last-child{border-bottom:none}
+.hist-item .hd{width:7px;height:7px;border-radius:50%;background:var(--verde);margin-top:6px;flex:none}
+.hist-item .ht{font-size:12.5px}
+.hist-item .hm{color:var(--txt-3);font-size:11px;font-family:'DM Mono',monospace}
+
+.evid{display:flex;align-items:center;gap:9px;background:var(--off);border:1px solid var(--linha);border-radius:9px;padding:8px 11px;margin-bottom:7px;font-size:12.5px}
+.evid .ei{width:26px;height:26px;border-radius:7px;background:var(--verde-l);color:var(--verde-d);display:grid;place-items:center;flex:none}
+.evid .ex{margin-left:auto;color:var(--txt-3);cursor:pointer}
+.evid .ex:hover{color:var(--vermelho)}
+
+.empty{text-align:center;padding:44px 20px;color:var(--txt-3)}
+.empty .ee{font-size:34px;margin-bottom:10px;opacity:.6}
+.empty h3{color:var(--txt-2);font-size:15px;margin-bottom:5px}
+
+.bar-list{display:flex;flex-direction:column;gap:12px}
+.bar-item{display:grid;grid-template-columns:130px 1fr 42px;align-items:center;gap:12px}
+.bar-item .bl{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{height:20px;background:var(--cinza-l);border-radius:6px;overflow:hidden}
+.bar-track>span{display:block;height:100%;border-radius:6px;transition:width .5s}
+.bar-item .bv{font-weight:700;text-align:right;font-family:'DM Mono',monospace}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:#fff;padding:13px 20px;border-radius:12px;font-weight:600;font-size:13.5px;box-shadow:var(--sombra-2);z-index:200;opacity:0;transition:.3s;display:flex;align-items:center;gap:10px}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast .ti{color:var(--verde)}
+
+.mini-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+.mini-legend div{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--txt-2);font-weight:500}
+.mini-legend .d{width:9px;height:9px;border-radius:50%}
+
+.split-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+
+.alert-row{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border-radius:11px;margin-bottom:8px;font-size:13px}
+.alert-row.r{background:var(--vermelho-l)} .alert-row.y{background:var(--amarelo-l)} .alert-row.b{background:var(--azul-l)} .alert-row.g{background:var(--verde-l)}
+.alert-row .ai{font-size:16px;flex:none}
+
+.tabbar{display:flex;gap:4px;background:var(--cinza-l);padding:4px;border-radius:11px;margin-bottom:18px;width:fit-content}
+.tabbar button{padding:8px 16px;border-radius:8px;font-weight:600;font-size:13px;color:var(--txt-2)}
+.tabbar button.on{background:#fff;color:var(--txt);box-shadow:var(--sombra)}
+
+.raci-badge{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;font-weight:700;font-size:11px}
+.raci-R{background:var(--verde-l);color:var(--verde-d)}
+.raci-A{background:var(--azul-l);color:#1a5fc4}
+.raci-C{background:var(--amarelo-l);color:#a9741a}
+.raci-I{background:var(--cinza-l);color:var(--txt-2)}
+
+@media(max-width:1024px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;left:0;top:0;bottom:0;width:248px;z-index:100;transform:translateX(-100%);transition:.25s}
+  .side.open{transform:none}
+  .menu-btn{display:grid!important}
+}
+.menu-btn{display:none}
+@media print{
+  .side,.top,.filters,.tabbar,.btn,.page-head .btn{display:none!important}
+  .app{grid-template-columns:1fr;height:auto}
+  .content{overflow:visible;padding:0}
+  .card,.tbl-wrap{box-shadow:none;break-inside:avoid}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<!-- TELA DE LOGIN (acesso restrito a e-mails allu) -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">a</div>
+    <div class="login-tt">allu · Control Fechamento</div>
+    <p class="login-sub" id="loginMsg">Acesso restrito à equipe allu. Entre com seu e-mail corporativo.</p>
+    <input id="loginEmail" type="email" placeholder="seu.nome@allugator.com" autocomplete="email" onkeydown="if(event.key==='Enter')App.entrar()">
+    <input id="loginSenha" type="password" placeholder="sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')App.entrar()">
+    <button class="btn" id="loginBtn" onclick="App.entrar()">Entrar</button>
+    <div class="login-note" id="loginNote"></div>
+    <div class="login-foot">Primeira vez aqui? <a href="#" id="linkCriar" onclick="App.criarConta();return false" style="color:var(--verde-d);font-weight:600">Criar minha conta</a> — escolha uma senha e pronto.</div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none">
+  <!-- SIDEBAR -->
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="logo">a</div>
+      <div>
+        <div class="bt">allu</div>
+        <div class="bs">Control Fechamento</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">Controladoria · v1.0<br><span id="footComp"></span><br><span id="syncInfo" class="sync-info"></span></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="top">
+      <button class="iconbtn menu-btn" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+      <div class="title" id="topTitle">Fechamento<small id="topSub">Contábil &amp; Fiscal</small></div>
+      <div class="search">
+        <span class="si">⌕</span>
+        <input id="globalSearch" placeholder="Buscar atividade, conta, responsável…" oninput="App.search(this.value)">
+      </div>
+      <div class="sp"></div>
+      <div class="selctrl">
+        <div class="lbl">Competência</div>
+        <select id="compSelect" onchange="App.setCompetencia(this.value)"></select>
+      </div>
+      <button class="iconbtn" onclick="App.toggleNotif()" title="Notificações">
+        🔔<span class="dot" id="notifDot" style="display:none"></span>
+      </button>
+      <div class="perfil" title="Quem sou eu — filtra Minhas pendências">
+        <div class="av" id="userAv">CT</div>
+        <select id="userSelect" onchange="App.setUsuario(this.value)"></select>
+      </div>
+      <div class="perfil" title="Perfil de acesso">
+        <select id="perfilSelect" onchange="App.setPerfil(this.value)">
+          <option value="admin">Admin / Controladoria</option>
+          <option value="responsavel">Responsável</option>
+          <option value="gestor">Gestor</option>
+          <option value="diretoria">Diretoria</option>
+        </select>
+      </div>
+      <button class="iconbtn" id="btnSair" title="Sair" onclick="App.sair()" style="display:none">⎋</button>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- Notif panel -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-head">Notificações <button class="btn ghost sm" onclick="App.toggleNotif()">Fechar</button></div>
+  <div class="notif-list" id="notifList"></div>
+</div>
+
+<!-- Overlay/modal -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)App.closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================================
+   ALLU · CONTROL FECHAMENTO  —  motor de dados + views
+   Dados persistidos em localStorage (chave allu_fechamento_v1).
+   100% editável pela interface, sem alterar código.
+   ========================================================================== */
+
+/* === CONFIGURAÇÃO DA NUVEM (preencha na FASE 1) ===========================
+   Cole, entre as aspas, o Project URL e a chave pública do Supabase.
+   No painel novo do Supabase a chave se chama "Publishable key" (começa com
+   sb_publishable_...). Serve exatamente no campo abaixo. É segura ficar aqui:
+   a proteção real é a regra por e-mail no banco (RLS).
+   Enquanto os dois estiverem como abaixo, o app roda em MODO LOCAL (preview). */
+const SUPABASE_URL      = 'https://rxgpsyfflbrtgalcpeci.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_lLRvrdqd4Vj057ejdE9KYA_dxO8A_ed';
+
+/* Domínio de e-mail liberado. Só quem tiver e-mail assim consegue entrar e ver.
+   Domínio de e-mail liberado: @allugator.com. Só quem tiver e-mail assim entra e vê. */
+const ALLU_DOMINIO = '@allugator.com';
+/* ========================================================================== */
+
+const KEY='allu_fechamento_v1';   // cópia de segurança local
+const TABELA='allu_estado';       // tabela criada no Supabase (FASE 1)
+const LINHA_ID=1;
+const CLOUD = !SUPABASE_URL.startsWith('COLE_AQUI') && !SUPABASE_ANON_KEY.startsWith('COLE_AQUI');
+
+/* ---------- utilidades de data ---------- */
+const DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function iso(d){return d.toISOString().slice(0,10);}
+function parse(s){const[y,m,dd]=s.split('-').map(Number);return new Date(y,m-1,dd);}
+function addDays(s,n){const d=parse(s);d.setDate(d.getDate()+n);return iso(d);}
+function addMonthsKey(key,n){const[y,m]=key.split('-').map(Number);const d=new Date(y,m-1+n,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function compLabel(key){const[y,m]=key.split('-').map(Number);return `${MESES[m-1]}/${y}`;}
+function fmt(s){if(!s)return '—';const d=parse(s);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;}
+function fmtFull(s){if(!s)return '—';const d=parse(s);return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
+function today(){return iso(new Date());}
+function isWeekend(s){const w=parse(s).getDay();return w===0||w===6;}
+function bizDaysBetween(a,b){let c=0,d=parse(a),end=parse(b);if(d>end)return 0;while(d<=end){const w=d.getDay();if(w!==0&&w!==6)c++;d.setDate(d.getDate()+1);}return c;}
+function nowStamp(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+
+/* ---------- metadados de status ---------- */
+const STATUS={
+  concluido:{lbl:'Concluído',cor:'#27AE60',cls:'concluido',emoji:'🟢'},
+  andamento:{lbl:'Em andamento',cor:'#2D7FF9',cls:'andamento',emoji:'🔵'},
+  aguardando:{lbl:'Aguardando informação',cor:'#E2A32B',cls:'aguardando',emoji:'🟡'},
+  nao_iniciado:{lbl:'Não iniciado',cor:'#B9B9B0',cls:'nao_iniciado',emoji:'⚪'},
+  atrasado:{lbl:'Atrasado',cor:'#E23D3D',cls:'atrasado',emoji:'🔴'},
+  bloqueado:{lbl:'Bloqueado',cor:'#3f3f46',cls:'bloqueado',emoji:'⚫'}
+};
+/* status efetivo: atrasa automaticamente se venceu e não foi concluído */
+function effStatus(a){
+  if(a.status==='concluido'||a.status==='bloqueado')return a.status;
+  if(a.prazo<today())return 'atrasado';
+  return a.status;
+}
+function stPill(a){const s=STATUS[effStatus(a)];return `<span class="st ${s.cls}"><span class="d"></span>${s.lbl}</span>`;}
+
+/* ==========================================================================
+   SEED — dados fictícios iniciais
+   ========================================================================== */
+function seed(){
+  const base=today();
+  const areas=['Controladoria','Contábil','Fiscal','Financeiro','Comercial','Operações','RH','Jurídico','Tesouraria'];
+  const responsaveis=[
+    {nome:'Thayane Marques',cargo:'Coord. Controladoria',area:'Controladoria',email:'thayane@allugator.com',gestor:'Isa Diretoria'},
+    {nome:'Marianna Duarte',cargo:'Analista Contábil',area:'Contábil',email:'marianna@allugator.com',gestor:'Thayane Marques'},
+    {nome:'Yghor Almeida',cargo:'Analista Fiscal',area:'Fiscal',email:'yghor@allugator.com',gestor:'Thayane Marques'},
+    {nome:'Leandro Souza',cargo:'Analista Financeiro',area:'Financeiro',email:'leandro@allugator.com',gestor:'Thayane Marques'},
+    {nome:'Isa Rocha',cargo:'Diretora',area:'Controladoria',email:'isa@allugator.com',gestor:'—'},
+    {nome:'Bruno Costa',cargo:'Analista Comercial',area:'Comercial',email:'bruno@allugator.com',gestor:'Ana Lima'},
+    {nome:'Ana Lima',cargo:'Coord. Operações',area:'Operações',email:'ana@allugator.com',gestor:'Isa Rocha'},
+    {nome:'Paula Reis',cargo:'Analista Tesouraria',area:'Tesouraria',email:'paula@allugator.com',gestor:'Leandro Souza'},
+    {nome:'Carla Nunes',cargo:'Analista RH',area:'RH',email:'carla@allugator.com',gestor:'—'}
+  ];
+  const planoContas=[
+    {codigo:'1.1.01.01',nome:'Caixa e Bancos',tipo:'analitica',grupo:'Ativo Circulante',subgrupo:'Disponível',natureza:'Devedora',centroResultado:'Corporativo',areaResponsavel:'Tesouraria',responsavelAnalise:'Paula Reis',frequencia:'Mensal',materialidade:'alta',obs:''},
+    {codigo:'1.1.02.01',nome:'Clientes a Receber B2C',tipo:'analitica',grupo:'Ativo Circulante',subgrupo:'Contas a Receber',natureza:'Devedora',centroResultado:'B2C',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:'Carteira de contratos de locação'},
+    {codigo:'1.1.02.02',nome:'Clientes a Receber B2B',tipo:'analitica',grupo:'Ativo Circulante',subgrupo:'Contas a Receber',natureza:'Devedora',centroResultado:'B2B',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:''},
+    {codigo:'1.1.03.01',nome:'(-) PCLD',tipo:'analitica',grupo:'Ativo Circulante',subgrupo:'Contas a Receber',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'Controladoria',responsavelAnalise:'Marianna Duarte',frequencia:'Mensal',materialidade:'media',obs:'Provisão perdas'},
+    {codigo:'1.2.01.01',nome:'Imobilizado — Devices Locação',tipo:'analitica',grupo:'Ativo Não Circulante',subgrupo:'Imobilizado',natureza:'Devedora',centroResultado:'B2C',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:'Classificação CAPEX vs Estoque em revisão'},
+    {codigo:'1.2.01.09',nome:'(-) Depreciação Acumulada',tipo:'analitica',grupo:'Ativo Não Circulante',subgrupo:'Imobilizado',natureza:'Credora',centroResultado:'B2C',areaResponsavel:'Contábil',responsavelAnalise:'Marianna Duarte',frequencia:'Mensal',materialidade:'media',obs:''},
+    {codigo:'2.1.01.01',nome:'Fornecedores',tipo:'analitica',grupo:'Passivo Circulante',subgrupo:'Fornecedores',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'Financeiro',responsavelAnalise:'Leandro Souza',frequencia:'Mensal',materialidade:'alta',obs:'285 fornecedores segmentados'},
+    {codigo:'2.1.03.01',nome:'Obrigações Tributárias',tipo:'analitica',grupo:'Passivo Circulante',subgrupo:'Tributos',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'Fiscal',responsavelAnalise:'Yghor Almeida',frequencia:'Mensal',materialidade:'alta',obs:''},
+    {codigo:'2.1.03.09',nome:'Parcelamentos Tributários',tipo:'analitica',grupo:'Passivo Circulante',subgrupo:'Tributos',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'Fiscal',responsavelAnalise:'Yghor Almeida',frequencia:'Mensal',materialidade:'media',obs:'Aging conforme CPC 40'},
+    {codigo:'2.1.04.01',nome:'Provisão de Folha',tipo:'analitica',grupo:'Passivo Circulante',subgrupo:'Pessoal',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'RH',responsavelAnalise:'Carla Nunes',frequencia:'Mensal',materialidade:'media',obs:''},
+    {codigo:'2.2.01.01',nome:'FIDC — Cotas Subordinadas',tipo:'analitica',grupo:'Passivo Não Circulante',subgrupo:'Empréstimos',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:'PL do fundo'},
+    {codigo:'2.3.01.01',nome:'Passivo Fiscal Diferido',tipo:'analitica',grupo:'Passivo Não Circulante',subgrupo:'Tributos Diferidos',natureza:'Credora',centroResultado:'Corporativo',areaResponsavel:'Fiscal',responsavelAnalise:'Yghor Almeida',frequencia:'Mensal',materialidade:'media',obs:'CPC 32 — depende do regime'},
+    {codigo:'3.1.01.01',nome:'Receita de Locação B2C',tipo:'analitica',grupo:'Resultado',subgrupo:'Receita',natureza:'Credora',centroResultado:'B2C',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:''},
+    {codigo:'3.1.02.01',nome:'Receita de Locação B2B',tipo:'analitica',grupo:'Resultado',subgrupo:'Receita',natureza:'Credora',centroResultado:'B2B',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:''},
+    {codigo:'4.1.02.01',nome:'Software / Licenças',tipo:'analitica',grupo:'Resultado',subgrupo:'Despesas',natureza:'Devedora',centroResultado:'Corporativo',areaResponsavel:'Contábil',responsavelAnalise:'Marianna Duarte',frequencia:'Mensal',materialidade:'baixa',obs:''},
+    {codigo:'4.2.01.01',nome:'Despesas Financeiras',tipo:'analitica',grupo:'Resultado',subgrupo:'Financeiras',natureza:'Devedora',centroResultado:'Corporativo',areaResponsavel:'Controladoria',responsavelAnalise:'Leandro Souza',frequencia:'Mensal',materialidade:'media',obs:''},
+    {codigo:'4.3.01.01',nome:'Custo de Depreciação Devices',tipo:'analitica',grupo:'Resultado',subgrupo:'Custos',natureza:'Devedora',centroResultado:'B2C',areaResponsavel:'Controladoria',responsavelAnalise:'Thayane Marques',frequencia:'Mensal',materialidade:'alta',obs:''}
+  ];
+
+  // biblioteca de atividades padrão (banco)
+  const banco=[
+    'Conciliação bancária','Conciliação de clientes','Conciliação de fornecedores','Conciliação de impostos',
+    'Reconhecimento de receita','Provisão de despesas','Provisão de folha','Depreciação','Amortização',
+    'Arrendamento (IFRS 16)','Aplicações financeiras','Empréstimos','FIDC — PL do fundo','Investimentos',
+    'PCLD','Análise de contas patrimoniais','Análise de contas de resultado','Fechamento fiscal','SPED',
+    'Apuração de impostos','Montagem da DRE','Montagem do Balanço','Revisão analítica'
+  ];
+
+  // atividades-mestre da competência ativa (offsets relativos a "hoje")
+  // off = prazo relativo a hoje (dias). st = status base.
+  const M=(off,ini,st,o)=>Object.assign({dataInicio:addDays(base,ini),prazo:addDays(base,off),status:st},o);
+  const master=[
+    M(-9,-11,'concluido',{etapa:'Abertura',atividade:'Abertura do fechamento',descricao:'Congelamento de lançamentos e abertura da competência no SAP.',responsavelExec:'Thayane Marques',areaResponsavel:'Controladoria',areaFornecedora:'Controladoria',responsavelEnvio:'Thayane Marques',aprovador:'Isa Rocha',prioridade:'alta',contas:[],deps:[],evidObrig:false}),
+    M(-7,-9,'concluido',{etapa:'Fiscal',atividade:'Fechamento fiscal — apuração de impostos',descricao:'Apuração de PIS/COFINS/ISS e geração das guias.',responsavelExec:'Yghor Almeida',areaResponsavel:'Fiscal',areaFornecedora:'Fiscal',responsavelEnvio:'Yghor Almeida',aprovador:'Thayane Marques',prioridade:'alta',contas:['2.1.03.01'],deps:[],evidObrig:true}),
+    M(-6,-9,'concluido',{etapa:'Fiscal',atividade:'Entrega SPED Contribuições',descricao:'Validação e transmissão do SPED.',responsavelExec:'Yghor Almeida',areaResponsavel:'Fiscal',areaFornecedora:'Fiscal',responsavelEnvio:'Yghor Almeida',aprovador:'Thayane Marques',prioridade:'media',contas:['2.1.03.01'],deps:[1],evidObrig:true}),
+    M(-5,-8,'concluido',{etapa:'Conciliações',atividade:'Conciliação bancária',descricao:'Conciliação de todas as contas bancárias com extratos.',responsavelExec:'Paula Reis',areaResponsavel:'Tesouraria',areaFornecedora:'Tesouraria',responsavelEnvio:'Paula Reis',aprovador:'Leandro Souza',prioridade:'alta',contas:['1.1.01.01'],deps:[],evidObrig:true}),
+    M(-2,-6,'andamento',{etapa:'Receita',atividade:'Envio da base de faturamento B2C',descricao:'Comercial/Operações envia base consolidada de faturamento do mês.',responsavelExec:'Bruno Costa',areaResponsavel:'Comercial',areaFornecedora:'Comercial',responsavelEnvio:'Bruno Costa',aprovador:'Thayane Marques',prioridade:'alta',contas:['3.1.01.01'],deps:[],evidObrig:false}),
+    M(1,-4,'aguardando',{etapa:'Receita',atividade:'Reconhecimento de receita',descricao:'Reconhecimento da receita de locação conforme competência.',responsavelExec:'Thayane Marques',areaResponsavel:'Controladoria',areaFornecedora:'Comercial',responsavelEnvio:'Bruno Costa',aprovador:'Isa Rocha',prioridade:'alta',contas:['3.1.01.01','3.1.02.01'],deps:[5],evidObrig:true}),
+    M(2,-3,'nao_iniciado',{etapa:'Receita',atividade:'Conciliação receita x NF',descricao:'Conferência entre receita reconhecida e notas fiscais emitidas.',responsavelExec:'Marianna Duarte',areaResponsavel:'Contábil',areaFornecedora:'Fiscal',responsavelEnvio:'Yghor Almeida',aprovador:'Thayane Marques',prioridade:'media',contas:['3.1.01.01','3.1.02.01'],deps:[6],evidObrig:true}),
+    M(-1,-6,'atrasado',{etapa:'Conciliações',atividade:'Conciliação de fornecedores',descricao:'Conciliação da posição de fornecedores (285 vendors segmentados).',responsavelExec:'Leandro Souza',areaResponsavel:'Financeiro',areaFornecedora:'Financeiro',responsavelEnvio:'Leandro Souza',aprovador:'Thayane Marques',prioridade:'alta',contas:['2.1.01.01'],deps:[],evidObrig:true}),
+    M(0,-5,'andamento',{etapa:'Provisões',atividade:'Provisão de folha de pagamento',descricao:'RH envia base de folha para provisionamento.',responsavelExec:'Carla Nunes',areaResponsavel:'RH',areaFornecedora:'RH',responsavelEnvio:'Carla Nunes',aprovador:'Thayane Marques',prioridade:'media',contas:['2.1.04.01'],deps:[],evidObrig:false}),
+    M(2,-3,'nao_iniciado',{etapa:'Ativo',atividade:'Depreciação de devices',descricao:'Cálculo e lançamento da depreciação da carteira de devices.',responsavelExec:'Marianna Duarte',areaResponsavel:'Contábil',areaFornecedora:'Controladoria',responsavelEnvio:'Thayane Marques',aprovador:'Thayane Marques',prioridade:'alta',contas:['1.2.01.09','4.3.01.01'],deps:[],evidObrig:true}),
+    M(3,-3,'nao_iniciado',{etapa:'Ativo',atividade:'Arrendamento — IFRS 16',descricao:'Atualização do cronograma de arrendamentos e lançamento.',responsavelExec:'Marianna Duarte',areaResponsavel:'Contábil',areaFornecedora:'Contábil',responsavelEnvio:'Marianna Duarte',aprovador:'Thayane Marques',prioridade:'media',contas:[],deps:[],evidObrig:true}),
+    M(1,-4,'aguardando',{etapa:'Provisões',atividade:'PCLD — provisão de perdas',descricao:'Cálculo da PCLD com base no aging da carteira.',responsavelExec:'Marianna Duarte',areaResponsavel:'Controladoria',areaFornecedora:'Controladoria',responsavelEnvio:'Thayane Marques',aprovador:'Isa Rocha',prioridade:'media',contas:['1.1.03.01'],deps:[6],evidObrig:true}),
+    M(0,-4,'atrasado',{etapa:'Financeiro',atividade:'FIDC — apuração do PL do fundo',descricao:'Fechamento do PL do FIDC e conciliação das cotas.',responsavelExec:'Thayane Marques',areaResponsavel:'Controladoria',areaFornecedora:'Tesouraria',responsavelEnvio:'Paula Reis',aprovador:'Isa Rocha',prioridade:'alta',contas:['2.2.01.01'],deps:[4],evidObrig:true}),
+    M(3,-2,'nao_iniciado',{etapa:'Fiscal',atividade:'Passivo fiscal diferido — CPC 32',descricao:'Revisão do IR/CS diferido conforme regime tributário.',responsavelExec:'Yghor Almeida',areaResponsavel:'Fiscal',areaFornecedora:'Fiscal',responsavelEnvio:'Yghor Almeida',aprovador:'Thayane Marques',prioridade:'baixa',contas:['2.3.01.01'],deps:[],evidObrig:false}),
+    M(4,-2,'nao_iniciado',{etapa:'Análise',atividade:'Análise de contas de resultado',descricao:'Análise de variações relevantes das contas de DRE.',responsavelExec:'Thayane Marques',areaResponsavel:'Controladoria',areaFornecedora:'Controladoria',responsavelEnvio:'Thayane Marques',aprovador:'Isa Rocha',prioridade:'media',contas:['4.1.02.01','4.2.01.01'],deps:[6,9],evidObrig:false}),
+    M(5,-1,'nao_iniciado',{etapa:'Fechamento',atividade:'Montagem da DRE',descricao:'Consolidação da DRE gerencial e societária.',responsavelExec:'Thayane Marques',areaResponsavel:'Controladoria',areaFornecedora:'Controladoria',responsavelEnvio:'Thayane Marques',aprovador:'Isa Rocha',prioridade:'alta',contas:['3.1.01.01','3.1.02.01','4.1.02.01'],deps:[6,10,15],evidObrig:true}),
+    M(5,-1,'nao_iniciado',{etapa:'Fechamento',atividade:'Montagem do Balanço Patrimonial',descricao:'Consolidação e conferência do balanço.',responsavelExec:'Marianna Duarte',areaResponsavel:'Contábil',areaFornecedora:'Contábil',responsavelEnvio:'Marianna Duarte',aprovador:'Thayane Marques',prioridade:'alta',contas:[],deps:[16],evidObrig:true}),
+    M(6,0,'nao_iniciado',{etapa:'Revisão',atividade:'Revisão analítica final',descricao:'Revisão analítica e validação final para diretoria.',responsavelExec:'Thayane Marques',areaResponsavel:'Controladoria',areaFornecedora:'Controladoria',responsavelEnvio:'Thayane Marques',aprovador:'Isa Rocha',prioridade:'alta',contas:[],deps:[17,18],evidObrig:true})
+  ];
+
+  // normaliza atividades (id, RACI, histórico, lembretes, evidências)
+  function buildAtivs(list,concludeAll){
+    return list.map((a,i)=>{
+      const id=i+1;
+      const done=concludeAll||a.status==='concluido';
+      return {
+        id, etapa:a.etapa, atividade:a.atividade, descricao:a.descricao,
+        dataInicio:a.dataInicio, prazo:a.prazo,
+        responsavelExec:a.responsavelExec, areaResponsavel:a.areaResponsavel,
+        areaFornecedora:a.areaFornecedora, responsavelEnvio:a.responsavelEnvio,
+        aprovador:a.aprovador, status:done?'concluido':a.status,
+        prioridade:a.prioridade, dependencias:a.deps||[], contas:a.contas||[],
+        centroCusto:a.centroCusto||'', obs:a.obs||'', evidencias:done?[{nome:'evidencia_'+a.etapa.toLowerCase()+'.xlsx',data:nowStamp()}]:[],
+        dataConclusao:done?addDays(a.prazo,0):'', ultimaAtualizacao:nowStamp(),
+        evidObrig:a.evidObrig!==false,
+        raci:{R:a.responsavelExec,A:a.aprovador,C:a.responsavelEnvio,I:'Isa Rocha'},
+        lembretes:['D-2','D-1','D0'],
+        historico:[{quem:'Sistema',acao:'Atividade criada no fechamento',de:'',para:done?'concluido':a.status,data:nowStamp(),obs:''}]
+      };
+    });
+  }
+
+  const compAtiva=addMonthsKey(`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`,-1);
+  const compAnterior=addMonthsKey(compAtiva,-1);
+  const compProxima=addMonthsKey(compAtiva,1);
+
+  const ativas=buildAtivs(master,false);
+  const anteriores=buildAtivs(master.map(m=>Object.assign({},m,{dataInicio:addMonthsKey?m.dataInicio:m.dataInicio})),true);
+
+  const competencias={};
+  competencias[compAtiva]={key:compAtiva,label:compLabel(compAtiva),inicio:master[0].dataInicio,prazo:master[master.length-1].prazo,encerrado:false,atividades:ativas};
+  competencias[compAnterior]={key:compAnterior,label:compLabel(compAnterior),inicio:addDays(master[0].dataInicio,-30),prazo:addDays(master[master.length-1].prazo,-30),encerrado:true,atividades:anteriores.map(a=>Object.assign({},a,{dataInicio:addDays(a.dataInicio,-30),prazo:addDays(a.prazo,-30),dataConclusao:addDays(a.dataConclusao||a.prazo,-30)}))};
+
+  const revisao={};
+  revisao[compAtiva]=[
+    {conta:'3.1.01.01',variacao:'+8,2%',justificativa:'Crescimento da base ativa de contratos B2C.',responsavel:'Thayane Marques',status:'andamento'},
+    {conta:'4.3.01.01',variacao:'+5,1%',justificativa:'Aumento da carteira de devices depreciáveis.',responsavel:'Thayane Marques',status:'nao_iniciado'},
+    {conta:'2.1.01.01',variacao:'-3,4%',justificativa:'Renegociação com fornecedores estratégicos.',responsavel:'Leandro Souza',status:'nao_iniciado'}
+  ];
+
+  const emailLog=[
+    {atividade:6,dest:'bruno@allugator.com',tipo:'D-2',status:'Enviado',data:nowStamp()},
+    {atividade:8,dest:'leandro@allugator.com',tipo:'D+1',status:'Enviado',data:nowStamp()},
+    {atividade:13,dest:'paula@allugator.com',tipo:'D0',status:'Enviado',data:nowStamp()}
+  ];
+
+  return {
+    competenciaAtiva:compAtiva, competencias, planoContas, responsaveis, areas,
+    bancoAtividades:banco, revisaoAnalitica:revisao, emailLog, perfil:'admin',
+    usuarioAtual:responsaveis[0].nome,
+    slaMeta:2
+  };
+}
+
+/* ==========================================================================
+   STATE
+   ========================================================================== */
+/* ==========================================================================
+   PERSISTÊNCIA + LOGIN
+   - Sem chaves preenchidas → MODO LOCAL (localStorage), sem login. Para preview.
+   - Com chaves preenchidas → MODO NUVEM (Supabase) + login por e-mail @allu.
+   ========================================================================== */
+let S=null;
+let SESSAO_EMAIL='';
+let sb=null;
+if(CLOUD && window.supabase){ try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY); }catch(e){ console.error('Supabase init:',e); } }
+
+function loadLocal(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}const s=seed();try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}return s;}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+let _saveTimer=null;
+function save(){
+  saveLocal();                                   // backup local sempre
+  if(!CLOUD||!sb||!S)return;
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async()=>{
+    try{
+      const {error}=await sb.from(TABELA).upsert({id:LINHA_ID,conteudo:S,atualizado_em:new Date().toISOString(),atualizado_por:SESSAO_EMAIL});
+      if(error)throw error;
+      marcarSync('salvo');
+    }catch(e){ marcarSync('erro'); console.error('Falha ao salvar na nuvem:',e); }
+  },600);
+}
+
+async function carregarNuvem(){
+  const {data,error}=await sb.from(TABELA).select('conteudo').eq('id',LINHA_ID).maybeSingle();
+  if(error)throw error;
+  if(data && data.conteudo){ S=data.conteudo; marcarSync('carregado'); }
+  else{
+    S=seed();
+    const {error:e2}=await sb.from(TABELA).insert({id:LINHA_ID,conteudo:S,atualizado_em:new Date().toISOString(),atualizado_por:SESSAO_EMAIL});
+    if(e2)throw e2;
+    marcarSync('novo');
+  }
+}
+
+function marcarSync(estado){
+  const el=document.getElementById('syncInfo'); if(!el)return;
+  if(!CLOUD){ el.textContent='Modo local (preview)'; return; }
+  if(estado==='erro'){ el.textContent='⚠ falha ao salvar'; el.style.color='var(--vermelho)'; return; }
+  el.style.color='';
+  const hora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  el.textContent='☁ '+(estado==='carregado'?'carregado':'salvo')+' '+hora+(SESSAO_EMAIL?' · '+SESSAO_EMAIL:'');
+}
+function comp(){return S.competencias[S.competenciaAtiva];}
+function ativs(){return comp().atividades;}
+function ativById(id){return ativs().find(a=>a.id===id);}
+function contaByCod(c){return S.planoContas.find(p=>p.codigo===c);}
+function me(){
+  if(!S.usuarioAtual||!S.responsaveis.some(r=>r.nome===S.usuarioAtual))
+    S.usuarioAtual=S.responsaveis[0]?S.responsaveis[0].nome:'';
+  return S.usuarioAtual;
+}
+function initials(nome){return (nome||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';}
+
+/* ==========================================================================
+   NAV + ROUTER
+   ========================================================================== */
+const NAV=[
+  {grp:'Visão geral',items:[
+    {id:'home',ic:'⌂',lbl:'Home',perfis:['admin','responsavel','gestor','diretoria']},
+    {id:'dashboard',ic:'▦',lbl:'Dashboard executivo',perfis:['admin','gestor','diretoria']},
+  ]},
+  {grp:'Fechamento',items:[
+    {id:'cronograma',ic:'☰',lbl:'Cronograma',perfis:['admin','responsavel','gestor']},
+    {id:'gantt',ic:'▤',lbl:'Gantt',perfis:['admin','gestor','diretoria']},
+    {id:'calendario',ic:'▧',lbl:'Calendário',perfis:['admin','responsavel','gestor']},
+    {id:'painel',ic:'◈',lbl:'Minhas pendências',perfis:['admin','responsavel']},
+    {id:'fornecedora',ic:'⇅',lbl:'Portal da área',perfis:['admin','responsavel','gestor']},
+  ]},
+  {grp:'Contábil',items:[
+    {id:'plano',ic:'#',lbl:'Plano de contas',perfis:['admin']},
+    {id:'contaAtiv',ic:'⇄',lbl:'Conta × Atividade',perfis:['admin','gestor']},
+    {id:'raci',ic:'⊞',lbl:'Matriz RACI',perfis:['admin','gestor']},
+    {id:'revisao',ic:'✓',lbl:'Revisão analítica',perfis:['admin','gestor']},
+  ]},
+  {grp:'Gestão',items:[
+    {id:'indicadores',ic:'◔',lbl:'Indicadores & SLA',perfis:['admin','gestor','diretoria']},
+    {id:'responsaveis',ic:'☺',lbl:'Responsáveis & áreas',perfis:['admin','gestor']},
+    {id:'config',ic:'⚙',lbl:'Configurações',perfis:['admin']},
+  ]},
+];
+const PERFIL_AV={admin:'CT',responsavel:'RS',gestor:'GS',diretoria:'DR'};
+
+let currentView='home';
+let cronoFilters={area:'',resp:'',status:'',prio:'',etapa:'',atrasadas:false,q:''};
+
+const App={
+  init(){
+    this.renderNav();
+    document.getElementById('perfilSelect').value=S.perfil;
+    this.renderUserSelect();
+    this.renderCompSelect();
+    this.go(currentView);
+    this.refreshNotif();
+    document.getElementById('footComp').textContent=comp().label;
+  },
+  /* ---- LOGIN / SESSÃO ---- */
+  mostrarLogin(){document.getElementById('loginScreen').style.display='flex';document.getElementById('appRoot').style.display='none';},
+  mostrarApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appRoot').style.display='';document.getElementById('btnSair').style.display=CLOUD?'':'none';},
+  erroLogin(msg){this.mostrarLogin();const n=document.getElementById('loginNote');if(n){n.textContent=msg;n.className='login-note err';}const b=document.getElementById('loginBtn');if(b)b.disabled=false;},
+  async entrar(){
+    const email=(document.getElementById('loginEmail').value||'').trim().toLowerCase();
+    const senha=document.getElementById('loginSenha').value||'';
+    const note=document.getElementById('loginNote');
+    if(!email.endsWith(ALLU_DOMINIO)){note.textContent='Use um e-mail terminado em '+ALLU_DOMINIO;note.className='login-note err';return;}
+    if(!senha){note.textContent='Digite sua senha.';note.className='login-note err';return;}
+    if(!sb){note.textContent='Login indisponível (a rede pode estar bloqueando o componente). Me avise.';note.className='login-note err';return;}
+    const btn=document.getElementById('loginBtn');btn.disabled=true;note.textContent='Entrando…';note.className='login-note';
+    try{
+      const {data,error}=await sb.auth.signInWithPassword({email,password:senha});
+      if(error)throw error;
+      await this.entrarComSessao(data.session);
+    }catch(e){
+      const m=(e.message||'')+'';
+      if(/Invalid login credentials/i.test(m)) note.textContent='E-mail ou senha incorretos. Se é sua primeira vez, clique em "Criar minha conta".';
+      else if(/Email not confirmed/i.test(m)) note.textContent='Conta ainda não confirmada. Peça para desativar a confirmação por e-mail no Supabase (ver instruções).';
+      else note.textContent='Não foi possível entrar: '+m;
+      note.className='login-note err';btn.disabled=false;
+    }
+  },
+  async criarConta(){
+    const email=(document.getElementById('loginEmail').value||'').trim().toLowerCase();
+    const senha=document.getElementById('loginSenha').value||'';
+    const note=document.getElementById('loginNote');
+    if(!email.endsWith(ALLU_DOMINIO)){note.textContent='Use um e-mail terminado em '+ALLU_DOMINIO;note.className='login-note err';return;}
+    if(senha.length<6){note.textContent='Escolha uma senha com pelo menos 6 caracteres, depois clique em "Criar minha conta".';note.className='login-note err';return;}
+    if(!sb){note.textContent='Login indisponível (a rede pode estar bloqueando o componente). Me avise.';note.className='login-note err';return;}
+    const btn=document.getElementById('loginBtn');btn.disabled=true;note.textContent='Criando conta…';note.className='login-note';
+    try{
+      const {data,error}=await sb.auth.signUp({email,password:senha});
+      if(error)throw error;
+      if(data.session){ await this.entrarComSessao(data.session); }
+      else { note.textContent='Conta criada! Agora digite a mesma senha e clique em "Entrar".';note.className='login-note ok';btn.disabled=false; }
+    }catch(e){
+      const m=(e.message||'')+'';
+      if(/already registered/i.test(m)) note.textContent='Esse e-mail já tem conta. Digite sua senha e clique em "Entrar".';
+      else note.textContent='Não foi possível criar a conta: '+m;
+      note.className='login-note err';btn.disabled=false;
+    }
+  },
+  async entrarComSessao(session){
+    const email=((session.user&&session.user.email)||'').toLowerCase();
+    if(!email.endsWith(ALLU_DOMINIO)){
+      document.getElementById('loginMsg').textContent='Acesso permitido apenas para e-mails '+ALLU_DOMINIO+'.';
+      const n=document.getElementById('loginNote');if(n){n.textContent='A conta '+email+' não é allu. Encerrando…';n.className='login-note err';}
+      if(sb)await sb.auth.signOut();this.mostrarLogin();return;
+    }
+    SESSAO_EMAIL=email;
+    try{await carregarNuvem();}
+    catch(e){this.erroLogin('Login ok, mas falhou ao carregar os dados: '+(e.message||e));return;}
+    this.mostrarApp();this.init();
+  },
+  async sair(){if(sb)await sb.auth.signOut();location.reload();},
+  renderUserSelect(){
+    const sel=document.getElementById('userSelect');
+    if(!sel)return;
+    sel.innerHTML=S.responsaveis.map(r=>`<option ${r.nome===me()?'selected':''}>${r.nome}</option>`).join('');
+    document.getElementById('userAv').textContent=initials(me());
+  },
+  setUsuario(nome){
+    S.usuarioAtual=nome;save();
+    document.getElementById('userAv').textContent=initials(nome);
+    this.renderNav();
+    if(currentView==='painel')this.go('painel');
+    this.toast('Você agora é '+nome);
+  },
+  renderNav(){
+    const nav=document.getElementById('nav');
+    nav.innerHTML=NAV.map(g=>{
+      const items=g.items.filter(i=>i.perfis.includes(S.perfil));
+      if(!items.length)return '';
+      return `<div class="grp">${g.grp}</div>`+items.map(i=>{
+        const badge=this.navBadge(i.id);
+        return `<a data-v="${i.id}" onclick="App.go('${i.id}')"><span class="ic">${i.ic}</span>${i.lbl}${badge}</a>`;
+      }).join('');
+    }).join('');
+    this.markNav();
+  },
+  navBadge(id){
+    if(id==='cronograma'||id==='painel'){
+      const n=ativs().filter(a=>effStatus(a)==='atrasado'&&(id!=='painel'||a.responsavelExec===me())).length;
+      return n?`<span class="badge">${n}</span>`:'';
+    }
+    return '';
+  },
+  markNav(){document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===currentView));},
+  renderCompSelect(){
+    const keys=Object.keys(S.competencias).sort();
+    document.getElementById('compSelect').innerHTML=keys.map(k=>`<option value="${k}" ${k===S.competenciaAtiva?'selected':''}>${S.competencias[k].label}</option>`).join('');
+  },
+  setCompetencia(k){S.competenciaAtiva=k;save();document.getElementById('footComp').textContent=comp().label;this.renderNav();this.go(currentView);this.refreshNotif();},
+  setPerfil(p){S.perfil=p;save();this.renderNav();
+    if(p==='diretoria'&&!['home','dashboard','indicadores','gantt'].includes(currentView))currentView='dashboard';
+    this.go(currentView);},
+  go(v){currentView=v;this.markNav();document.getElementById('side').classList.remove('open');
+    const t={home:['Home','Resumo do fechamento'],dashboard:['Dashboard executivo','Visão da diretoria'],cronograma:['Cronograma','Atividades da competência'],gantt:['Gantt','Linha do tempo'],calendario:['Calendário','Agenda do fechamento'],painel:['Minhas pendências','Painel da Controladoria'],fornecedora:['Portal da área','Informações a fornecer'],plano:['Plano de contas','Estrutura contábil'],contaAtiv:['Conta × Atividade','Vínculos'],raci:['Matriz RACI','Responsabilidades'],revisao:['Revisão analítica','Etapa final'],indicadores:['Indicadores & SLA','Performance do fechamento'],responsaveis:['Responsáveis & áreas','Cadastro'],config:['Configurações','Governança e biblioteca']};
+    const[a,b]=t[v]||['',''];document.getElementById('topTitle').innerHTML=`${a}<small>${b}</small>`;
+    const fn='view_'+v;const el=document.getElementById('content');
+    el.innerHTML=`<div class="view">${this[fn]?this[fn]():'<p>Em breve.</p>'}</div>`;el.scrollTop=0;
+  },
+  search(q){cronoFilters.q=q.trim().toLowerCase();if(q&&currentView!=='cronograma'){this.go('cronograma');}else if(currentView==='cronograma'){this.go('cronograma');}},
+
+  /* ---------- KPIs ---------- */
+  kpis(){
+    const A=ativs();
+    const total=A.length;
+    const concl=A.filter(a=>effStatus(a)==='concluido').length;
+    const and=A.filter(a=>effStatus(a)==='andamento').length;
+    const agu=A.filter(a=>effStatus(a)==='aguardando').length;
+    const nao=A.filter(a=>effStatus(a)==='nao_iniciado').length;
+    const atr=A.filter(a=>effStatus(a)==='atrasado').length;
+    const blo=A.filter(a=>effStatus(a)==='bloqueado').length;
+    const pct=total?Math.round(concl/total*100):0;
+    const respPend=new Set(A.filter(a=>effStatus(a)==='atrasado').map(a=>a.responsavelEnvio)).size;
+    const c=comp();
+    const diasUteis=c.prazo>=today()?bizDaysBetween(today(),c.prazo):0;
+    return {total,concl,and,agu,nao,atr,blo,pct,respPend,diasUteis,inicio:c.inicio,prazo:c.prazo};
+  },
+
+  /* ====================================================================
+     HOME
+     ==================================================================== */
+  view_home(){
+    const k=this.kpis();const c=comp();
+    const proximos=ativs().filter(a=>effStatus(a)!=='concluido').sort((a,b)=>a.prazo.localeCompare(b.prazo)).slice(0,6);
+    const altMat=ativs().filter(a=>a.contas.some(cc=>{const p=contaByCod(cc);return p&&p.materialidade==='alta';})&&effStatus(a)!=='concluido').length;
+    return `
+      <div class="page-head">
+        <div><h1>Fechamento — ${c.label}</h1><p>Início ${fmtFull(c.inicio)} · Prazo oficial ${fmtFull(c.prazo)} · ${k.diasUteis} dia(s) útil(eis) restante(s)</p></div>
+        <button class="btn" onclick="App.go('cronograma')">Ver cronograma</button>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px">
+          <div><div class="sec-title" style="margin:0">Progresso do fechamento</div><div style="font-size:34px;font-weight:700;letter-spacing:-1px;margin-top:4px">${k.pct}% <span style="font-size:15px;color:var(--txt-3);font-weight:600">concluído</span></div></div>
+          <div style="text-align:right;font-size:12.5px;color:var(--txt-2)"><b>${k.concl}</b> de <b>${k.total}</b> atividades</div>
+        </div>
+        <div class="prog big"><span style="width:${k.pct}%"></span></div>
+        <div class="mini-legend">
+          <div><span class="d" style="background:var(--verde)"></span>${k.concl} concluídas</div>
+          <div><span class="d" style="background:var(--azul)"></span>${k.and} em andamento</div>
+          <div><span class="d" style="background:var(--amarelo)"></span>${k.agu} aguardando</div>
+          <div><span class="d" style="background:#B9B9B0"></span>${k.nao} não iniciadas</div>
+          <div><span class="d" style="background:var(--vermelho)"></span>${k.atr} atrasadas</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card card-pad">
+          <div class="sec-title">Próximos prazos</div>
+          <div class="tbl-wrap" style="box-shadow:none;border:none">
+          <table class="tbl" style="min-width:0">
+            <thead><tr><th>Prazo</th><th>Atividade</th><th>Responsável</th><th>Status</th></tr></thead>
+            <tbody>${proximos.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
+              <td class="cell-strong">${this.prazoTag(a)}</td>
+              <td>${a.atividade}</td>
+              <td class="cell-sub">${a.responsavelExec}</td>
+              <td>${stPill(a)}</td></tr>`).join('')||'<tr><td colspan=4 class="empty">Sem pendências 🎉</td></tr>'}</tbody>
+          </table></div>
+        </div>
+        <div class="card card-pad">
+          <div class="sec-title">Principais alertas</div>
+          ${k.atr?`<div class="alert-row r"><span class="ai">🔴</span><div><b>${k.atr} atividade(s) atrasada(s)</b><div class="cell-sub">Prazo ultrapassado sem conclusão</div></div></div>`:''}
+          ${k.agu?`<div class="alert-row y"><span class="ai">🟡</span><div><b>${k.agu} informação(ões) aguardando outras áreas</b><div class="cell-sub">Dependência de fornecedores</div></div></div>`:''}
+          ${altMat?`<div class="alert-row b"><span class="ai">⚠️</span><div><b>${altMat} conta(s) de alta materialidade pendentes</b><div class="cell-sub">Exigem análise e evidência</div></div></div>`:''}
+          <div class="alert-row g"><span class="ai">🟢</span><div><b>${k.concl} atividade(s) concluída(s)</b><div class="cell-sub">Com evidência anexada</div></div></div>
+        </div>
+      </div>`;
+  },
+  prazoTag(a){const t=today();if(a.prazo<t)return `<span style="color:var(--vermelho)">${fmt(a.prazo)}</span>`;if(a.prazo===t)return `<span style="color:var(--amarelo)">Hoje</span>`;if(a.prazo===addDays(t,1))return `<span style="color:var(--azul)">Amanhã</span>`;return fmt(a.prazo);},
+
+  /* ====================================================================
+     DASHBOARD EXECUTIVO
+     ==================================================================== */
+  view_dashboard(){
+    const k=this.kpis();const c=comp();
+    const porArea=this.rankArea();
+    return `
+      <div class="page-head"><div><h1>Fechamento Contábil &amp; Fiscal</h1><p>Competência ${c.label} · SLA meta ${S.slaMeta} dias úteis</p></div>
+      <button class="btn ghost" onclick="App.exportPDF()">Exportar PDF</button></div>
+
+      <div class="kpis">
+        <div class="kpi accent"><div class="k-l">Conclusão</div><div class="k-v">${k.pct}%</div><div class="k-s">${k.concl}/${k.total} atividades</div><span class="k-tag">📊</span></div>
+        <div class="kpi"><div class="k-l">Dias úteis restantes</div><div class="k-v">${k.diasUteis}</div><div class="k-s">até ${fmt(k.prazo)}</div></div>
+        <div class="kpi"><div class="k-l">Em andamento</div><div class="k-v">${k.and}</div><div class="k-s">iniciadas</div><span class="k-tag">🔵</span></div>
+        <div class="kpi"><div class="k-l">Aguardando</div><div class="k-v">${k.agu}</div><div class="k-s">outras áreas</div><span class="k-tag">🟡</span></div>
+        <div class="kpi"><div class="k-l">Atrasadas</div><div class="k-v" style="color:var(--vermelho)">${k.atr}</div><div class="k-s">${k.respPend} responsável(is) com pendência</div><span class="k-tag">🔴</span></div>
+        <div class="kpi"><div class="k-l">Não iniciadas</div><div class="k-v">${k.nao}</div><div class="k-s">na fila</div><span class="k-tag">⚪</span></div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card card-pad">
+          <div class="sec-title">Status do fechamento</div>
+          ${this.donut(k)}
+        </div>
+        <div class="card card-pad">
+          <div class="split-head"><div class="sec-title" style="margin:0">Ranking de pendências por área</div></div>
+          <div class="bar-list">${porArea.map(r=>{
+            const max=porArea[0].n||1;const w=Math.round(r.n/max*100);
+            return `<div class="bar-item"><div class="bl">${r.area}</div><div class="bar-track"><span style="width:${w}%;background:${r.n>2?'var(--vermelho)':r.n>0?'var(--amarelo)':'var(--verde)'}"></span></div><div class="bv">${r.n}</div></div>`;
+          }).join('')}</div>
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="sec-title">Comparativo com competência anterior</div>
+        ${this.compComparativo()}
+      </div>`;
+  },
+  donut(k){
+    const segs=[['concluido',k.concl],['andamento',k.and],['aguardando',k.agu],['nao_iniciado',k.nao],['atrasado',k.atr],['bloqueado',k.blo]].filter(s=>s[1]>0);
+    const tot=k.total||1;let acc=0;const r=54,cir=2*Math.PI*r;
+    const arcs=segs.map(([s,n])=>{const frac=n/tot;const dash=frac*cir;const el=`<circle r="${r}" cx="70" cy="70" fill="none" stroke="${STATUS[s].cor}" stroke-width="20" stroke-dasharray="${dash} ${cir-dash}" stroke-dashoffset="${-acc}" transform="rotate(-90 70 70)"/>`;acc+=dash;return el;}).join('');
+    return `<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140" style="flex:none">${arcs}<text x="70" y="66" text-anchor="middle" font-size="26" font-weight="700" fill="#2E2F39">${k.pct}%</text><text x="70" y="86" text-anchor="middle" font-size="10" fill="#9A9BA6">concluído</text></svg>
+      <div style="flex:1;min-width:180px">${segs.map(([s,n])=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:13px"><span style="width:10px;height:10px;border-radius:3px;background:${STATUS[s].cor};flex:none"></span>${STATUS[s].lbl}<b style="margin-left:auto" class="mono">${n}</b></div>`).join('')}</div>
+    </div>`;
+  },
+  rankArea(){
+    const map={};S.areas.forEach(a=>map[a]=0);
+    ativs().forEach(a=>{if(['atrasado','aguardando'].includes(effStatus(a))){map[a.areaFornecedora]=(map[a.areaFornecedora]||0)+1;}});
+    return Object.entries(map).map(([area,n])=>({area,n})).sort((a,b)=>b.n-a.n);
+  },
+  compComparativo(){
+    const keys=Object.keys(S.competencias).sort();const idx=keys.indexOf(S.competenciaAtiva);
+    if(idx<=0)return '<p class="cell-sub">Sem competência anterior para comparação.</p>';
+    const prev=S.competencias[keys[idx-1]];
+    const pc=(cp)=>{const t=cp.atividades.length;const c=cp.atividades.filter(a=>a.status==='concluido').length;return t?Math.round(c/t*100):0;};
+    const atr=(cp)=>cp.atividades.filter(a=>effStatus(a)==='atrasado').length;
+    return `<div class="dl" style="grid-template-columns:repeat(3,1fr)">
+      <div class="di"><div class="k">${prev.label} — conclusão</div><div class="v">${pc(prev)}%</div></div>
+      <div class="di"><div class="k">${comp().label} — conclusão</div><div class="v">${pc(comp())}%</div></div>
+      <div class="di"><div class="k">Atrasos (ant → atual)</div><div class="v">${atr(prev)} → <span style="color:${atr(comp())>atr(prev)?'var(--vermelho)':'var(--verde-d)'}">${atr(comp())}</span></div></div>
+    </div>`;
+  },
+
+  /* ====================================================================
+     CRONOGRAMA
+     ==================================================================== */
+  filteredAtivs(){
+    const f=cronoFilters;
+    return ativs().filter(a=>{
+      if(f.area&&a.areaResponsavel!==f.area)return false;
+      if(f.resp&&a.responsavelExec!==f.resp)return false;
+      if(f.status&&effStatus(a)!==f.status)return false;
+      if(f.prio&&a.prioridade!==f.prio)return false;
+      if(f.etapa&&a.etapa!==f.etapa)return false;
+      if(f.atrasadas&&effStatus(a)!=='atrasado')return false;
+      if(f.q){const hay=(a.atividade+' '+a.descricao+' '+a.responsavelExec+' '+a.contas.join(' ')+' '+a.etapa).toLowerCase();if(!hay.includes(f.q))return false;}
+      return true;
+    });
+  },
+  view_cronograma(){
+    const f=cronoFilters;const etapas=[...new Set(ativs().map(a=>a.etapa))];
+    const rows=this.filteredAtivs().sort((a,b)=>a.prazo.localeCompare(b.prazo));
+    const opt=(arr,sel)=>arr.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`).join('');
+    return `
+      <div class="page-head"><div><h1>Cronograma de fechamento</h1><p>${rows.length} atividade(s) · ${comp().label}</p></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" onclick="App.exportExcel()">Excel</button>
+        <button class="btn ghost" onclick="App.exportPDF()">PDF</button>
+        <button class="btn" onclick="App.openAtiv('new')">+ Nova atividade</button>
+      </div></div>
+
+      <div class="filters">
+        <select onchange="App.setFilter('etapa',this.value)"><option value="">Etapa</option>${opt(etapas,f.etapa)}</select>
+        <select onchange="App.setFilter('area',this.value)"><option value="">Área</option>${opt(S.areas,f.area)}</select>
+        <select onchange="App.setFilter('resp',this.value)"><option value="">Responsável</option>${opt(S.responsaveis.map(r=>r.nome),f.resp)}</select>
+        <select onchange="App.setFilter('status',this.value)"><option value="">Status</option>${Object.keys(STATUS).map(s=>`<option value="${s}" ${s===f.status?'selected':''}>${STATUS[s].lbl}</option>`).join('')}</select>
+        <select onchange="App.setFilter('prio',this.value)"><option value="">Prioridade</option>${opt(['alta','media','baixa'],f.prio)}</select>
+        <button class="chip ${f.atrasadas?'on':''}" onclick="App.setFilter('atrasadas',${!f.atrasadas})">🔴 Somente atrasadas</button>
+        ${(f.area||f.resp||f.status||f.prio||f.etapa||f.atrasadas||f.q)?`<button class="chip" onclick="App.clearFilters()">✕ Limpar</button>`:''}
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>ID</th><th>Etapa</th><th>Atividade</th><th>Responsável</th><th>Área forn.</th><th>Início</th><th>Prazo</th><th>Prio</th><th>Contas</th><th>Status</th></tr></thead>
+          <tbody>${rows.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
+            <td class="mono cell-sub">#${String(a.id).padStart(2,'0')}</td>
+            <td><span class="cell-sub">${a.etapa}</span></td>
+            <td class="cell-strong">${a.atividade}${a.dependencias.length?' <span class="cell-sub">⛓</span>':''}</td>
+            <td>${a.responsavelExec}</td>
+            <td class="cell-sub">${a.areaFornecedora}</td>
+            <td class="cell-sub">${fmt(a.dataInicio)}</td>
+            <td class="cell-strong">${this.prazoTag(a)}</td>
+            <td><span class="prio ${a.prioridade}">${a.prioridade}</span></td>
+            <td>${a.contas.length?`<span class="tag">${a.contas[0]}${a.contas.length>1?' +'+(a.contas.length-1):''}</span>`:'<span class="cell-sub">—</span>'}</td>
+            <td>${stPill(a)}</td></tr>`).join('')||'<tr><td colspan=10 class="empty"><div class="ee">🔍</div><h3>Nenhuma atividade</h3>Ajuste os filtros.</td></tr>'}</tbody>
+        </table>
+      </div>`;
+  },
+  setFilter(k,v){cronoFilters[k]=v;this.go('cronograma');},
+  clearFilters(){cronoFilters={area:'',resp:'',status:'',prio:'',etapa:'',atrasadas:false,q:''};document.getElementById('globalSearch').value='';this.go('cronograma');},
+
+  /* ====================================================================
+     GANTT
+     ==================================================================== */
+  view_gantt(){
+    const c=comp();const A=ativs().slice().sort((a,b)=>a.dataInicio.localeCompare(b.dataInicio));
+    let min=c.inicio,max=c.prazo;A.forEach(a=>{if(a.dataInicio<min)min=a.dataInicio;if(a.prazo>max)max=a.prazo;});
+    const days=[];let d=min;while(d<=max){days.push(d);d=addDays(d,1);}const nd=days.length;
+    const colW=`${100/nd}%`;
+    const scale=days.map(dd=>`<div class="gantt-day ${isWeekend(dd)?'we':''}">${parse(dd).getDate()}</div>`).join('');
+    const t=today();const tIdx=days.indexOf(t);
+    const rows=A.map(a=>{
+      const si=days.indexOf(a.dataInicio),ei=days.indexOf(a.prazo);
+      const left=Math.max(0,si)/nd*100;const width=Math.max(1,(ei-Math.max(0,si)+1))/nd*100;
+      const col=STATUS[effStatus(a)].cor;
+      return `<div class="gantt-row"><div class="gantt-lbl" title="${a.atividade}">${a.atividade}<small>${a.responsavelExec}</small></div>
+        <div class="gantt-track">
+          ${days.map(dd=>`<div class="gantt-cell ${isWeekend(dd)?'we':''}" style="left:${days.indexOf(dd)/nd*100}%;width:${colW}"></div>`).join('')}
+          ${tIdx>=0?`<div class="gantt-today" style="left:${(tIdx+0.5)/nd*100}%"></div>`:''}
+          <div class="gantt-bar" style="left:${left}%;width:${width}%;background:${col}" onclick="App.openAtiv(${a.id})">${fmt(a.dataInicio)}–${fmt(a.prazo)}</div>
+        </div></div>`;
+    }).join('');
+    return `<div class="page-head"><div><h1>Gantt — ${c.label}</h1><p>Linha do tempo do fechamento · barra colorida por status</p></div></div>
+      <div class="gantt"><div class="gantt-inner">
+        <div class="gantt-row gantt-head"><div class="gantt-lbl">Atividade</div><div class="gantt-scale">${scale}</div></div>
+        ${rows}
+      </div></div>
+      <div class="mini-legend" style="margin-top:14px">${Object.keys(STATUS).map(s=>`<div><span class="d" style="background:${STATUS[s].cor}"></span>${STATUS[s].lbl}</div>`).join('')}</div>`;
+  },
+
+  /* ====================================================================
+     CALENDÁRIO
+     ==================================================================== */
+  view_calendario(){
+    const c=comp();const ref=parse(c.inicio);const y=ref.getFullYear(),m=ref.getMonth();
+    const first=new Date(y,m,1);const start=new Date(first);start.setDate(1-((first.getDay()+6)%7)); // segunda-início
+    const cells=[];for(let i=0;i<42;i++){const dd=new Date(start);dd.setDate(start.getDate()+i);cells.push(dd);}
+    const byDay={};ativs().forEach(a=>{(byDay[a.prazo]=byDay[a.prazo]||[]).push(a);});
+    const t=today();
+    return `<div class="page-head"><div><h1>${MESES[m]}/${y}</h1><p>Prazos das atividades do fechamento</p></div></div>
+      <div class="cal">
+        <div class="cal-head">${['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(d=>`<div>${d}</div>`).join('')}</div>
+        <div class="cal-grid">${cells.map(dd=>{
+          const s=iso(dd);const out=dd.getMonth()!==m;const evs=byDay[s]||[];
+          return `<div class="cal-cell ${out?'out':''} ${s===t?'today':''}">
+            <div class="dn">${dd.getDate()}</div>
+            ${evs.slice(0,3).map(a=>`<div class="cal-ev" style="background:${STATUS[effStatus(a)].cor}22;color:${STATUS[effStatus(a)].cor}" onclick="App.openAtiv(${a.id})">${a.atividade}</div>`).join('')}
+            ${evs.length>3?`<div class="cell-sub" style="font-size:10px">+${evs.length-3} mais</div>`:''}
+          </div>`;
+        }).join('')}</div>
+      </div>`;
+  },
+
+  /* ====================================================================
+     PAINEL DA CONTROLADORIA (minhas pendências)
+     ==================================================================== */
+  view_painel(){
+    const meNome=me();
+    const minhas=ativs().filter(a=>a.responsavelExec===meNome);
+    const t=today();
+    const hoje=minhas.filter(a=>a.prazo===t&&effStatus(a)!=='concluido');
+    const atr=minhas.filter(a=>effStatus(a)==='atrasado');
+    const aguard=minhas.filter(a=>effStatus(a)==='aguardando');
+    const concl=minhas.filter(a=>effStatus(a)==='concluido');
+    const prox=minhas.filter(a=>effStatus(a)!=='concluido'&&a.prazo>t).sort((a,b)=>a.prazo.localeCompare(b.prazo));
+    const box=(t,arr,tag)=>`<div class="card card-pad"><div class="sec-title">${t} <b class="mono" style="margin-left:auto">${arr.length}</b></div>
+      ${arr.length?arr.map(a=>`<div class="evid" style="cursor:pointer" onclick="App.openAtiv(${a.id})"><span class="ei">${tag}</span><div style="flex:1"><b style="font-size:13px">${a.atividade}</b><div class="cell-sub">Prazo ${fmt(a.prazo)} · ${a.areaFornecedora}</div></div>${stPill(a)}</div>`).join(''):'<p class="cell-sub">Nada por aqui.</p>'}</div>`;
+    return `<div class="page-head"><div><h1>Minhas pendências</h1><p>${meNome} · Painel da Controladoria</p></div></div>
+      <div class="kpis">
+        <div class="kpi"><div class="k-l">Para hoje</div><div class="k-v">${hoje.length}</div></div>
+        <div class="kpi"><div class="k-l">Atrasadas</div><div class="k-v" style="color:var(--vermelho)">${atr.length}</div></div>
+        <div class="kpi"><div class="k-l">Aguardando info</div><div class="k-v">${aguard.length}</div></div>
+        <div class="kpi accent"><div class="k-l">Concluídas</div><div class="k-v">${concl.length}</div></div>
+      </div>
+      <div class="grid-2">${box('Atrasadas',atr,'🔴')}${box('Para hoje',hoje,'📌')}</div>
+      <div class="grid-2" style="margin-top:16px">${box('Aguardando informação',aguard,'🟡')}${box('Próximos prazos',prox,'📅')}</div>`;
+  },
+
+  /* ====================================================================
+     PORTAL DA ÁREA FORNECEDORA
+     ==================================================================== */
+  view_fornecedora(){
+    const areasForn=[...new Set(ativs().map(a=>a.areaFornecedora))];
+    const sel=this._areaForn||areasForn[0];this._areaForn=sel;
+    const list=ativs().filter(a=>a.areaFornecedora===sel&&effStatus(a)!=='concluido').sort((a,b)=>a.prazo.localeCompare(b.prazo));
+    return `<div class="page-head"><div><h1>Portal da área fornecedora</h1><p>Informações que cada área precisa entregar ao fechamento</p></div>
+      <select class="selctrl" style="padding:9px 12px" onchange="App._areaForn=this.value;App.go('fornecedora')">${areasForn.map(a=>`<option ${a===sel?'selected':''}>${a}</option>`).join('')}</select></div>
+      <div class="card card-pad" style="margin-bottom:16px;background:var(--verde-l);border-color:transparent">
+        <b style="font-size:15px">${sel}</b> — você possui <b>${list.length}</b> informação(ões) pendente(s) para o fechamento de ${comp().label}.
+      </div>
+      ${list.length?list.map((a,i)=>`<div class="evid" style="cursor:pointer;padding:13px 15px" onclick="App.openAtiv(${a.id})">
+        <span class="ei">${i+1}</span><div style="flex:1"><b>${a.atividade}</b><div class="cell-sub">Solicitado por ${a.areaResponsavel} · Envio: ${a.responsavelEnvio}</div></div>
+        <div style="text-align:right"><div class="cell-strong">${this.prazoTag(a)}</div>${stPill(a)}</div></div>`).join(''):'<div class="empty"><div class="ee">✅</div><h3>Sem pendências</h3>Todas as informações desta área foram entregues.</div>'}`;
+  },
+
+  /* ====================================================================
+     PLANO DE CONTAS
+     ==================================================================== */
+  view_plano(){
+    const P=S.planoContas;
+    return `<div class="page-head"><div><h1>Plano de contas</h1><p>${P.length} contas · vínculo com atividades e materialidade</p></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost" style="color:var(--vermelho)" onclick="App.limparPlano()">Limpar tudo</button>
+        <button class="btn ghost" onclick="App.importPlano()">Importar</button>
+        <button class="btn" onclick="App.openConta('new')">+ Nova conta</button>
+      </div></div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Código</th><th>Conta</th><th>Grupo</th><th>Natureza</th><th>Área</th><th>Responsável</th><th>Materialidade</th><th>Atividade vinculada</th></tr></thead>
+        <tbody>${P.map(p=>{const at=ativs().find(a=>a.contas.includes(p.codigo));
+          return `<tr class="clk" onclick="App.openConta('${p.codigo}')">
+            <td class="mono cell-strong">${p.codigo}</td><td>${p.nome}</td>
+            <td class="cell-sub">${p.grupo}</td><td class="cell-sub">${p.natureza}</td>
+            <td>${p.areaResponsavel}</td><td class="cell-sub">${p.responsavelAnalise}</td>
+            <td><span class="mat ${p.materialidade}">${p.materialidade}</span></td>
+            <td>${at?`<span class="cell-sub">${at.atividade}</span>`:'<span style="color:var(--vermelho);font-size:11.5px">⚠ sem atividade</span>'}</td></tr>`;
+        }).join('')}</tbody></table></div>`;
+  },
+
+  /* ====================================================================
+     CONTA × ATIVIDADE
+     ==================================================================== */
+  view_contaAtiv(){
+    const rows=[];
+    S.planoContas.forEach(p=>{
+      const ats=ativs().filter(a=>a.contas.includes(p.codigo));
+      if(ats.length)ats.forEach(a=>rows.push({p,a}));
+      else rows.push({p,a:null});
+    });
+    const semAtiv=rows.filter(r=>!r.a).length;
+    const semConta=ativs().filter(a=>!a.contas.length).length;
+    return `<div class="page-head"><div><h1>Conta × Atividade</h1><p>Cruzamento de contas e atividades do fechamento</p></div></div>
+      <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+        <div class="kpi"><div class="k-l">Contas sem atividade</div><div class="k-v" style="color:${semAtiv?'var(--vermelho)':'inherit'}">${semAtiv}</div></div>
+        <div class="kpi"><div class="k-l">Atividades sem conta</div><div class="k-v">${semConta}</div></div>
+        <div class="kpi"><div class="k-l">Contas alta materialidade</div><div class="k-v">${S.planoContas.filter(p=>p.materialidade==='alta').length}</div></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Conta</th><th>Descrição</th><th>Mat.</th><th>Atividade</th><th>Responsável</th><th>Prazo</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(({p,a})=>`<tr ${a?`class="clk" onclick="App.openAtiv(${a.id})"`:''}>
+          <td class="mono cell-strong">${p.codigo}</td><td>${p.nome}</td>
+          <td><span class="mat ${p.materialidade}">${p.materialidade}</span></td>
+          <td>${a?a.atividade:'<span style="color:var(--vermelho)">⚠ sem atividade vinculada</span>'}</td>
+          <td class="cell-sub">${a?a.responsavelExec:'—'}</td>
+          <td class="cell-sub">${a?fmt(a.prazo):'—'}</td>
+          <td>${a?stPill(a):'<span class="st nao_iniciado"><span class="d"></span>—</span>'}</td></tr>`).join('')}</tbody></table></div>`;
+  },
+
+  /* ====================================================================
+     MATRIZ RACI
+     ==================================================================== */
+  view_raci(){
+    return `<div class="page-head"><div><h1>Matriz de responsabilidades (RACI)</h1><p>R responsável · A aprovador · C consultado · I informado</p></div></div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Atividade</th><th>R — Executa</th><th>A — Aprova</th><th>C — Consultado</th><th>I — Informado</th></tr></thead>
+        <tbody>${ativs().map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
+          <td class="cell-strong">${a.atividade}</td>
+          <td><span class="raci-badge raci-R">R</span> ${a.raci.R}</td>
+          <td><span class="raci-badge raci-A">A</span> ${a.raci.A}</td>
+          <td><span class="raci-badge raci-C">C</span> ${a.raci.C}</td>
+          <td><span class="raci-badge raci-I">I</span> ${a.raci.I}</td></tr>`).join('')}</tbody></table></div>`;
+  },
+
+  /* ====================================================================
+     REVISÃO ANALÍTICA
+     ==================================================================== */
+  view_revisao(){
+    const done=this.kpis().pct;
+    const rev=S.revisaoAnalitica[S.competenciaAtiva]||[];
+    const check=['Receita','Custos','Despesas','Financeiro','Pessoal','Impostos','Provisões','Ativo imobilizado','Arrendamentos','Contas patrimoniais','Contas a receber','Contas a pagar','Patrimônio líquido','DRE','Balanço','Fluxo de caixa'];
+    return `<div class="page-head"><div><h1>Revisão analítica do fechamento</h1><p>Etapa final · liberada quando o fechamento avança para 100%</p></div>
+      <button class="btn" onclick="App.openRevisao('new')">+ Registrar variação</button></div>
+      ${done<100?`<div class="card card-pad" style="background:var(--amarelo-l);border-color:transparent;margin-bottom:16px">⚠️ O fechamento está em <b>${done}%</b>. A revisão analítica é a última etapa — conclua as atividades pendentes antes de encerrar.</div>`:''}
+      <div class="grid-3">
+        <div class="card card-pad">
+          <div class="sec-title">Variações registradas</div>
+          <div class="tbl-wrap" style="box-shadow:none;border:1px solid var(--linha)"><table class="tbl" style="min-width:0">
+            <thead><tr><th>Conta</th><th>Variação</th><th>Justificativa</th><th>Resp.</th><th>Status</th><th style="text-align:right">Ações</th></tr></thead>
+            <tbody>${rev.map((r,i)=>{const p=contaByCod(r.conta);return `<tr class="clk" onclick="App.openRevisao(${i})">
+              <td class="mono cell-strong">${r.conta}<div class="cell-sub">${p?p.nome:''}</div></td>
+              <td class="cell-strong">${r.variacao}</td><td>${r.justificativa}</td>
+              <td class="cell-sub">${r.responsavel}</td>
+              <td><span class="st ${r.status}"><span class="d"></span>${STATUS[r.status].lbl}</span></td>
+              <td style="text-align:right;white-space:nowrap"><button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openRevisao(${i})">✎</button><button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delRevisao(${i})">🗑</button></td></tr>`;}).join('')||'<tr><td colspan=6 class="empty">Nenhuma variação registrada.</td></tr>'}</tbody></table></div>
+        </div>
+        <div class="card card-pad">
+          <div class="sec-title">Checklist da revisão</div>
+          ${check.map(c=>`<label style="display:flex;align-items:center;gap:9px;padding:6px 0;font-size:13px;cursor:pointer"><input type="checkbox" style="width:16px;height:16px;accent-color:var(--verde)"> ${c}</label>`).join('')}
+        </div>
+      </div>`;
+  },
+
+  /* ====================================================================
+     INDICADORES & SLA
+     ==================================================================== */
+  view_indicadores(){
+    const A=ativs();const k=this.kpis();
+    const comEvid=A.filter(a=>a.evidencias.length).length;
+    const noPrazo=A.filter(a=>a.status==='concluido'&&a.dataConclusao&&a.dataConclusao<=a.prazo).length;
+    const foraPrazo=A.filter(a=>a.status==='concluido').length-noPrazo;
+    const pctPrazo=A.filter(a=>a.status==='concluido').length?Math.round(noPrazo/A.filter(a=>a.status==='concluido').length*100):0;
+    const pctEvid=k.total?Math.round(comEvid/k.total*100):0;
+    const realizado=(S.slaMeta+0.4).toFixed(1);
+    const porArea=this.rankArea();
+    const porResp={};A.forEach(a=>{if(effStatus(a)==='atrasado'){porResp[a.responsavelExec]=(porResp[a.responsavelExec]||0)+1;}});
+    const respRows=Object.entries(porResp).sort((a,b)=>b[1]-a[1]);
+    return `<div class="page-head"><div><h1>Indicadores do fechamento</h1><p>Performance da competência ${comp().label}</p></div>
+      <button class="btn ghost" onclick="App.exportPDF()">Exportar PDF</button></div>
+      <div class="kpis">
+        <div class="kpi"><div class="k-l">% concluído no prazo</div><div class="k-v">${pctPrazo}%</div><div class="k-s">${noPrazo} no prazo · ${foraPrazo} fora</div></div>
+        <div class="kpi"><div class="k-l">% com evidência</div><div class="k-v">${pctEvid}%</div><div class="k-s">${comEvid}/${k.total}</div></div>
+        <div class="kpi"><div class="k-l">Atrasadas</div><div class="k-v" style="color:${k.atr?'var(--vermelho)':'inherit'}">${k.atr}</div></div>
+        <div class="kpi"><div class="k-l">Info fora do prazo</div><div class="k-v">${foraPrazo}</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card card-pad">
+          <div class="sec-title">SLA do fechamento</div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap">
+            <div><div class="cell-sub">Meta</div><div style="font-size:28px;font-weight:700">${S.slaMeta} <span style="font-size:13px;color:var(--txt-3)">dias úteis</span></div></div>
+            <div><div class="cell-sub">Realizado</div><div style="font-size:28px;font-weight:700;color:var(--amarelo)">${realizado} <span style="font-size:13px;color:var(--txt-3)">dias</span></div></div>
+            <div><div class="cell-sub">Status</div><div style="font-size:20px;font-weight:700;color:var(--amarelo);margin-top:5px">⚠️ Acima da meta</div></div>
+          </div>
+          <div class="prog" style="margin-top:14px"><span style="width:${Math.min(100,S.slaMeta/realizado*100)}%;background:var(--amarelo)"></span></div>
+        </div>
+        <div class="card card-pad">
+          <div class="sec-title">Pendências por responsável</div>
+          ${respRows.length?respRows.map(([n,v])=>`<div class="bar-item"><div class="bl">${n}</div><div class="bar-track"><span style="width:${v/respRows[0][1]*100}%;background:var(--vermelho)"></span></div><div class="bv">${v}</div></div>`).join(''):'<p class="cell-sub">Sem responsáveis com atraso 🎉</p>'}
+        </div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="sec-title">Pendências por área</div>
+        <div class="bar-list">${porArea.filter(r=>r.n>0).map(r=>`<div class="bar-item"><div class="bl">${r.area}</div><div class="bar-track"><span style="width:${r.n/(porArea[0].n||1)*100}%;background:var(--dark)"></span></div><div class="bv">${r.n}</div></div>`).join('')||'<p class="cell-sub">Nenhuma pendência por área.</p>'}</div>
+      </div>`;
+  },
+
+  /* ====================================================================
+     RESPONSÁVEIS & ÁREAS
+     ==================================================================== */
+  view_responsaveis(){
+    return `<div class="page-head"><div><h1>Responsáveis &amp; áreas</h1><p>${S.responsaveis.length} pessoas cadastradas</p></div>
+      <button class="btn" onclick="App.openResp('new')">+ Novo responsável</button></div>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Nome</th><th>Cargo</th><th>Área</th><th>E-mail</th><th>Gestor</th><th>Ativ.</th><th>Pendências</th><th>Atrasos</th><th style="text-align:right">Ações</th></tr></thead>
+        <tbody>${S.responsaveis.map((r,i)=>{
+          const at=ativs().filter(a=>a.responsavelExec===r.nome);
+          const pend=at.filter(a=>effStatus(a)!=='concluido').length;
+          const atr=at.filter(a=>effStatus(a)==='atrasado').length;
+          return `<tr class="clk" onclick="App.openResp(${i})"><td class="cell-strong">${r.nome}</td><td class="cell-sub">${r.cargo}</td>
+            <td>${r.area}</td><td class="cell-sub mono" style="font-size:11.5px">${r.email}</td><td class="cell-sub">${r.gestor}</td>
+            <td class="mono">${at.length}</td><td class="mono">${pend}</td>
+            <td><b class="mono" style="color:${atr?'var(--vermelho)':'inherit'}">${atr}</b></td>
+            <td style="text-align:right;white-space:nowrap">
+              <button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openResp(${i})">✎</button>
+              <button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delResp(${i})">🗑</button></td></tr>`;
+        }).join('')}</tbody></table></div>`;
+  },
+
+  /* ====================================================================
+     CONFIGURAÇÕES
+     ==================================================================== */
+  view_config(){
+    return `<div class="page-head"><div><h1>Configurações</h1><p>Governança, competências e biblioteca de atividades</p></div></div>
+      <div class="grid-2">
+        <div class="card card-pad">
+          <div class="sec-title">Novo fechamento</div>
+          <p class="cell-sub" style="margin-bottom:12px">Crie a próxima competência a partir do modelo atual — atividades, responsáveis, contas, dependências e regras são copiados, e as datas recalculadas.</p>
+          <div class="field"><label>Duplicar ${comp().label} para</label>
+            <select id="dupComp">${[1,2,3].map(n=>{const k=addMonthsKey(S.competenciaAtiva,n);return `<option value="${k}">${compLabel(k)}</option>`;}).join('')}</select></div>
+          <button class="btn" onclick="App.duplicarFechamento()">Criar fechamento</button>
+        </div>
+        <div class="card card-pad">
+          <div class="sec-title">SLA e governança</div>
+          <div class="field"><label>Meta de SLA (dias úteis após receber todas as informações)</label>
+            <input type="number" id="slaInput" value="${S.slaMeta}" min="1" onchange="S.slaMeta=+this.value;save();App.toast('SLA atualizado')"></div>
+          <div class="field"><label>Perfis de acesso</label>
+            <div class="cell-sub">Admin/Controladoria (total) · Responsável (suas atividades) · Gestor (sua área + indicadores) · Diretoria (visão executiva). Troque no canto superior direito.</div></div>
+          ${comp().encerrado?'<span class="st concluido"><span class="d"></span>Competência encerrada</span>':`<button class="btn dark" onclick="App.encerrarFechamento()">Encerrar fechamento</button>`}
+        </div>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="split-head"><div class="sec-title" style="margin:0">Biblioteca de atividades padrão</div>
+        <button class="btn ghost sm" onclick="App.addBanco()">+ Adicionar</button></div>
+        <div class="tags">${S.bancoAtividades.map((b,i)=>`<span class="tag" style="font-family:'DM Sans'">${b} <span style="cursor:pointer;color:var(--txt-3)" onclick="App.rmBanco(${i})">✕</span></span>`).join('')}</div>
+        <p class="cell-sub" style="margin-top:12px">Use estes modelos ao criar novas atividades. Tudo é editável sem alterar o código.</p>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="sec-title">Log de e-mails / cobranças automáticas</div>
+        <div class="tbl-wrap" style="box-shadow:none;border:1px solid var(--linha)"><table class="tbl" style="min-width:0">
+          <thead><tr><th>Atividade</th><th>Destinatário</th><th>Tipo</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody>${(S.emailLog||[]).map(e=>{const a=ativById(e.atividade);return `<tr><td>${a?a.atividade:'#'+e.atividade}</td><td class="mono cell-sub">${e.dest}</td><td><span class="tag">${e.tipo}</span></td><td><span class="st concluido"><span class="d"></span>${e.status}</span></td><td class="cell-sub mono">${e.data}</td></tr>`;}).join('')||'<tr><td colspan=5 class="empty">Nenhum e-mail registrado.</td></tr>'}</tbody></table></div>
+        <p class="cell-sub" style="margin-top:10px">A plataforma está preparada para integração com Outlook/Gmail (via conector) para disparo real das cobranças D-2 / D-1 / D0 / D+1.</p>
+      </div>`;
+  },
+
+  /* ====================================================================
+     MODAL — ATIVIDADE (detalhe + edição)
+     ==================================================================== */
+  _editMode:false,
+  openAtiv(id){
+    this._editMode=false;
+    if(id==='new'){this._editMode=true;this.renderAtivForm(null);this.openModal();return;}
+    this.renderAtivDetail(ativById(id));this.openModal();
+  },
+  renderAtivDetail(a){
+    const deps=a.dependencias.map(d=>{const dd=ativById(d);return dd?`<span class="tag" style="font-family:'DM Sans'">${dd.atividade} ${effStatus(dd)==='concluido'?'✓':'⏳'}</span>`:'';}).join('');
+    const contasHtml=a.contas.map(c=>{const p=contaByCod(c);return `<span class="tag" title="${p?p.nome:''}">${c}</span>`;}).join('')||'<span class="cell-sub">Nenhuma conta vinculada</span>';
+    const canConclude=this.depsOk(a);
+    document.getElementById('modal').innerHTML=`
+      <div class="modal-head"><div><h2>${a.atividade}</h2><div class="mh-sub">#${String(a.id).padStart(2,'0')} · ${a.etapa} · ${comp().label}</div></div>
+      <button class="modal-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+          ${stPill(a)} <span class="prio ${a.prioridade}">Prioridade ${a.prioridade}</span>
+          <span style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn ghost sm" onclick="App.renderAtivForm(${a.id});">Editar</button>
+            ${a.status!=='concluido'?`<button class="btn sm" onclick="App.concluir(${a.id})">✓ Marcar como concluído</button>`:''}
+          </span>
+        </div>
+        <div class="detail-block"><p>${a.descricao||'Sem descrição.'}</p></div>
+        <div class="detail-block"><h4>Informações</h4><div class="dl">
+          <div class="di"><div class="k">Responsável (executa)</div><div class="v">${a.responsavelExec}</div></div>
+          <div class="di"><div class="k">Área responsável</div><div class="v">${a.areaResponsavel}</div></div>
+          <div class="di"><div class="k">Área fornecedora</div><div class="v">${a.areaFornecedora}</div></div>
+          <div class="di"><div class="k">Responsável pelo envio</div><div class="v">${a.responsavelEnvio}</div></div>
+          <div class="di"><div class="k">Aprovador</div><div class="v">${a.aprovador}</div></div>
+          <div class="di"><div class="k">Centro de custo</div><div class="v">${a.centroCusto||'—'}</div></div>
+          <div class="di"><div class="k">Início</div><div class="v">${fmtFull(a.dataInicio)}</div></div>
+          <div class="di"><div class="k">Prazo</div><div class="v">${fmtFull(a.prazo)}</div></div>
+        </div></div>
+        <div class="detail-block"><h4>Contas contábeis vinculadas</h4><div class="tags">${contasHtml}</div></div>
+        ${a.dependencias.length?`<div class="detail-block"><h4>Dependências ${canConclude?'':'<span style="color:var(--vermelho)">(pendentes)</span>'}</h4><div class="tags">${deps}</div></div>`:''}
+        <div class="detail-block"><h4>Evidências ${a.evidObrig?'<span class="cell-sub">(obrigatória)</span>':''}</h4>
+          ${a.evidencias.map((e,i)=>`<div class="evid"><span class="ei">📎</span>${e.nome}<span class="cell-sub" style="margin-left:auto">${e.data}</span><span class="ex" onclick="App.rmEvid(${a.id},${i})">✕</span></div>`).join('')||'<p class="cell-sub">Nenhuma evidência anexada.</p>'}
+          <button class="btn ghost sm" style="margin-top:8px" onclick="App.addEvid(${a.id})">📎 Anexar evidência</button>
+        </div>
+        <div class="detail-block"><h4>Observações</h4>
+          <textarea id="obsField" placeholder="Registrar ocorrências…" style="width:100%;border:1px solid var(--linha);border-radius:10px;padding:10px;min-height:52px">${a.obs||''}</textarea>
+          <button class="btn ghost sm" style="margin-top:8px" onclick="App.saveObs(${a.id})">Salvar observação</button>
+        </div>
+        <div class="detail-block"><h4>Histórico</h4>
+          ${a.historico.slice().reverse().map(h=>`<div class="hist-item"><span class="hd"></span><div><div class="ht"><b>${h.quem}</b> — ${h.acao}${h.de?` (${STATUS[h.de]?STATUS[h.de].lbl:h.de} → ${STATUS[h.para]?STATUS[h.para].lbl:h.para})`:''}</div><div class="hm">${h.data}</div></div></div>`).join('')}
+        </div>
+      </div>`;
+  },
+  depsOk(a){return a.dependencias.every(d=>{const dd=ativById(d);return !dd||dd.status==='concluido';});},
+
+  renderAtivForm(id){
+    const a=id?ativById(id):{id:'new',etapa:'',atividade:'',descricao:'',dataInicio:today(),prazo:addDays(today(),3),responsavelExec:S.responsaveis[0].nome,areaResponsavel:S.areas[0],areaFornecedora:S.areas[0],responsavelEnvio:S.responsaveis[0].nome,aprovador:S.responsaveis[0].nome,status:'nao_iniciado',prioridade:'media',contas:[],centroCusto:'',dependencias:[],evidObrig:true};
+    const so=(arr,sel)=>arr.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`).join('');
+    const respNames=S.responsaveis.map(r=>r.nome);
+    document.getElementById('modal').innerHTML=`
+      <div class="modal-head"><div><h2>${id?'Editar atividade':'Nova atividade'}</h2><div class="mh-sub">${comp().label}</div></div>
+      <button class="modal-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="field"><label>Atividade</label><input id="f_atividade" value="${a.atividade}" list="bancoList" placeholder="Ex.: Conciliação bancária"><datalist id="bancoList">${S.bancoAtividades.map(b=>`<option>${b}</option>`).join('')}</datalist></div>
+        <div class="field-row"><div class="field"><label>Etapa</label><input id="f_etapa" value="${a.etapa}" placeholder="Ex.: Conciliações"></div>
+        <div class="field"><label>Prioridade</label><select id="f_prio">${so(['alta','media','baixa'],a.prioridade)}</select></div></div>
+        <div class="field"><label>Descrição</label><textarea id="f_desc">${a.descricao}</textarea></div>
+        <div class="field-row"><div class="field"><label>Data de início</label><input type="date" id="f_ini" value="${a.dataInicio}"></div>
+        <div class="field"><label>Prazo final</label><input type="date" id="f_prazo" value="${a.prazo}"></div></div>
+        <div class="field-row"><div class="field"><label>Responsável (executa)</label><select id="f_resp">${so(respNames,a.responsavelExec)}</select></div>
+        <div class="field"><label>Área responsável</label><select id="f_area">${so(S.areas,a.areaResponsavel)}</select></div></div>
+        <div class="field-row"><div class="field"><label>Área fornecedora</label><select id="f_areaf">${so(S.areas,a.areaFornecedora)}</select></div>
+        <div class="field"><label>Responsável pelo envio</label><select id="f_respenvio">${so(respNames,a.responsavelEnvio)}</select></div></div>
+        <div class="field-row"><div class="field"><label>Aprovador</label><select id="f_aprov">${so(respNames,a.aprovador)}</select></div>
+        <div class="field"><label>Status</label><select id="f_status">${Object.keys(STATUS).map(s=>`<option value="${s}" ${s===a.status?'selected':''}>${STATUS[s].lbl}</option>`).join('')}</select></div></div>
+        <div class="field-row"><div class="field"><label>Centro de custo</label><input id="f_cc" value="${a.centroCusto}"></div>
+        <div class="field"><label>Evidência obrigatória?</label><select id="f_evidobrig"><option value="1" ${a.evidObrig?'selected':''}>Sim</option><option value="0" ${!a.evidObrig?'selected':''}>Não</option></select></div></div>
+        <div class="field"><label>Contas contábeis (múltiplas)</label>
+          <select id="f_contas" multiple size="5" style="height:auto">${S.planoContas.map(p=>`<option value="${p.codigo}" ${a.contas.includes(p.codigo)?'selected':''}>${p.codigo} — ${p.nome}</option>`).join('')}</select></div>
+        <div class="field"><label>Dependências (atividades que precisam ser concluídas antes)</label>
+          <select id="f_deps" multiple size="4" style="height:auto">${ativs().filter(x=>x.id!==a.id).map(x=>`<option value="${x.id}" ${a.dependencias.includes(x.id)?'selected':''}>#${x.id} — ${x.atividade}</option>`).join('')}</select></div>
+      </div>
+      <div class="modal-foot">
+        ${id?`<button class="btn ghost" style="margin-right:auto;color:var(--vermelho)" onclick="App.delAtiv(${id})">Excluir</button>`:''}
+        <button class="btn ghost" onclick="App.closeModal()">Cancelar</button>
+        <button class="btn" onclick="App.saveAtiv(${id||'null'})">Salvar</button>
+      </div>`;
+  },
+  saveAtiv(id){
+    const g=x=>document.getElementById(x);
+    const getMulti=x=>[...g(x).selectedOptions].map(o=>o.value);
+    const data={
+      etapa:g('f_etapa').value||'Geral', atividade:g('f_atividade').value||'Atividade sem nome',
+      descricao:g('f_desc').value, dataInicio:g('f_ini').value, prazo:g('f_prazo').value,
+      responsavelExec:g('f_resp').value, areaResponsavel:g('f_area').value, areaFornecedora:g('f_areaf').value,
+      responsavelEnvio:g('f_respenvio').value, aprovador:g('f_aprov').value, status:g('f_status').value,
+      prioridade:g('f_prio').value, centroCusto:g('f_cc').value, evidObrig:g('f_evidobrig').value==='1',
+      contas:getMulti('f_contas'), dependencias:getMulti('f_deps').map(Number),
+      ultimaAtualizacao:nowStamp()
+    };
+    const A=ativs();
+    if(id){const a=ativById(id);const antigo=a.status;Object.assign(a,data);
+      if(antigo!==data.status)a.historico.push({quem:'Controladoria',acao:'Status alterado',de:antigo,para:data.status,data:nowStamp(),obs:''});
+      else a.historico.push({quem:'Controladoria',acao:'Atividade editada',de:'',para:'',data:nowStamp(),obs:''});
+    }else{
+      const nid=Math.max(0,...A.map(a=>a.id))+1;
+      A.push(Object.assign({id:nid,evidencias:[],dataConclusao:'',raci:{R:data.responsavelExec,A:data.aprovador,C:data.responsavelEnvio,I:'Isa Rocha'},lembretes:['D-2','D-1','D0'],historico:[{quem:'Controladoria',acao:'Atividade criada',de:'',para:data.status,data:nowStamp(),obs:''}]},data));
+    }
+    save();this.toast(id?'Atividade atualizada':'Atividade criada');this.closeModal();this.go(currentView);this.refreshNotif();
+  },
+  delAtiv(id){if(!confirm('Excluir esta atividade?'))return;comp().atividades=ativs().filter(a=>a.id!==id);save();this.closeModal();this.go(currentView);this.refreshNotif();this.toast('Atividade excluída');},
+  concluir(id){
+    const a=ativById(id);
+    if(!this.depsOk(a)){if(!confirm('⚠️ Existem dependências não concluídas. Concluir mesmo assim?'))return;}
+    if(a.evidObrig&&!a.evidencias.length){
+      if(confirm('Esta atividade exige evidência. Deseja anexar agora?')){this.addEvid(id,true);return;}
+      return;
+    }
+    const de=a.status;a.status='concluido';a.dataConclusao=today();a.ultimaAtualizacao=nowStamp();
+    a.historico.push({quem:'Controladoria',acao:'Concluída',de,para:'concluido',data:nowStamp(),obs:''});
+    save();this.toast('✓ Atividade concluída');this.renderAtivDetail(a);this.go(currentView);this.refreshNotif();
+  },
+  addEvid(id,thenConclude){
+    const nome=prompt('Nome do arquivo de evidência (ex.: conciliacao_bancaria.xlsx):');if(!nome)return;
+    const a=ativById(id);a.evidencias.push({nome,data:nowStamp()});
+    a.historico.push({quem:'Controladoria',acao:'Evidência anexada: '+nome,de:'',para:'',data:nowStamp(),obs:''});
+    save();if(thenConclude){this.concluir(id);}else{this.renderAtivDetail(a);this.toast('Evidência anexada');}
+  },
+  rmEvid(id,i){const a=ativById(id);a.evidencias.splice(i,1);save();this.renderAtivDetail(a);},
+  saveObs(id){const a=ativById(id);a.obs=document.getElementById('obsField').value;a.historico.push({quem:'Controladoria',acao:'Observação registrada',de:'',para:'',data:nowStamp(),obs:''});save();this.toast('Observação salva');},
+
+  /* ---------- MODAL CONTA ---------- */
+  openConta(cod){
+    const p=cod==='new'?{codigo:'',nome:'',tipo:'analitica',grupo:'',subgrupo:'',natureza:'Devedora',centroResultado:'',areaResponsavel:S.areas[0],responsavelAnalise:S.responsaveis[0].nome,frequencia:'Mensal',materialidade:'media',obs:''}:contaByCod(cod);
+    const so=(arr,sel)=>arr.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('');
+    document.getElementById('modal').innerHTML=`
+      <div class="modal-head"><div><h2>${cod==='new'?'Nova conta':p.codigo}</h2><div class="mh-sub">Plano de contas</div></div><button class="modal-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="field-row"><div class="field"><label>Código</label><input id="c_cod" value="${p.codigo}" class="mono"></div>
+        <div class="field"><label>Tipo</label><select id="c_tipo">${so(['analitica','sintetica'],p.tipo)}</select></div></div>
+        <div class="field"><label>Nome da conta</label><input id="c_nome" value="${p.nome}"></div>
+        <div class="field-row"><div class="field"><label>Grupo</label><input id="c_grupo" value="${p.grupo}"></div>
+        <div class="field"><label>Subgrupo</label><input id="c_sub" value="${p.subgrupo}"></div></div>
+        <div class="field-row"><div class="field"><label>Natureza</label><select id="c_nat">${so(['Devedora','Credora'],p.natureza)}</select></div>
+        <div class="field"><label>Materialidade</label><select id="c_mat">${so(['alta','media','baixa'],p.materialidade)}</select></div></div>
+        <div class="field-row"><div class="field"><label>Área responsável</label><select id="c_area">${so(S.areas,p.areaResponsavel)}</select></div>
+        <div class="field"><label>Responsável análise</label><select id="c_resp">${so(S.responsaveis.map(r=>r.nome),p.responsavelAnalise)}</select></div></div>
+        <div class="field"><label>Observações</label><textarea id="c_obs">${p.obs}</textarea></div>
+      </div>
+      <div class="modal-foot">${cod!=='new'?`<button class="btn ghost" style="margin-right:auto;color:var(--vermelho)" onclick="App.delConta('${cod}')">Excluir</button>`:''}
+      <button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.saveConta('${cod}')">Salvar</button></div>`;
+    this.openModal();
+  },
+  saveConta(cod){const g=x=>document.getElementById(x).value;
+    const nova={codigo:g('c_cod'),nome:g('c_nome'),tipo:g('c_tipo'),grupo:g('c_grupo'),subgrupo:g('c_sub'),natureza:g('c_nat'),centroResultado:'',areaResponsavel:g('c_area'),responsavelAnalise:g('c_resp'),frequencia:'Mensal',materialidade:g('c_mat'),obs:g('c_obs')};
+    if(cod==='new')S.planoContas.push(nova);else{const i=S.planoContas.findIndex(p=>p.codigo===cod);S.planoContas[i]=nova;}
+    save();this.closeModal();this.go(currentView);this.toast('Conta salva');},
+  delConta(cod){if(!confirm('Excluir conta?'))return;S.planoContas=S.planoContas.filter(p=>p.codigo!==cod);save();this.closeModal();this.go(currentView);},
+  importPlano(){
+    document.getElementById('modal').innerHTML=`
+      <div class="modal-head"><div><h2>Importar plano de contas</h2><div class="mh-sub">Colar do Excel / SAP</div></div><button class="modal-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body">
+        <p class="cell-sub" style="margin-bottom:10px;line-height:1.5">Cole <b>uma conta por linha</b>, com as colunas na ordem <b>Código · Nome · Grupo · Natureza</b> (separadas por TAB, ponto-e-vírgula ou vírgula). Só <b>Código</b> e <b>Nome</b> são obrigatórios — o resto é opcional.</p>
+        <textarea id="imp_txt" style="min-height:200px;font-family:'DM Mono',monospace;font-size:12.5px" placeholder="Ex.:  1.1.01;Caixa e equivalentes;Ativo Circulante;Devedora"></textarea>
+        <label style="display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;cursor:pointer"><input type="checkbox" id="imp_sub" style="width:16px;height:16px;accent-color:var(--verde)"> Substituir TODO o plano atual (apaga as contas de hoje antes de importar)</label>
+      </div>
+      <div class="modal-foot"><button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.salvarImportPlano()">Importar</button></div>`;
+    this.openModal();
+  },
+  salvarImportPlano(){
+    const txt=document.getElementById('imp_txt').value||'';
+    const sub=document.getElementById('imp_sub').checked;
+    const linhas=txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(!linhas.length){alert('Cole ao menos uma linha.');return;}
+    const novas=[];
+    linhas.forEach(l=>{
+      const c=l.split(/\t|;|,/).map(x=>x.trim());
+      if(!c[0]||!c[1])return;
+      const nat=/cred/i.test(c[3]||'')?'Credora':'Devedora';
+      novas.push({codigo:c[0],nome:c[1],tipo:'analitica',grupo:c[2]||'',subgrupo:'',natureza:nat,centroResultado:'',areaResponsavel:S.areas[0],responsavelAnalise:(S.responsaveis[0]?S.responsaveis[0].nome:''),frequencia:'Mensal',materialidade:'media',obs:''});
+    });
+    if(!novas.length){alert('Nenhuma linha válida. Cada linha precisa ter pelo menos Código e Nome.');return;}
+    if(sub){S.planoContas=novas;}
+    else{const map={};S.planoContas.forEach(p=>map[p.codigo]=p);novas.forEach(n=>map[n.codigo]=n);S.planoContas=Object.values(map);}
+    save();this.closeModal();this.go('plano');this.toast(novas.length+' conta(s) importada(s)');
+  },
+  limparPlano(){
+    if(!confirm('Apagar TODAS as contas do plano de contas?\n\nIsso não apaga as atividades, mas remove os vínculos de conta. Você poderá importar um plano novo em seguida.'))return;
+    S.planoContas=[];save();this.go('plano');this.toast('Plano de contas apagado');
+  },
+
+  /* ---------- MODAL RESPONSÁVEL ---------- */
+  openResp(i){
+    const r=i==='new'?{nome:'',cargo:'',area:S.areas[0],email:'',gestor:''}:S.responsaveis[i];
+    const so=(arr,sel)=>arr.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('');
+    document.getElementById('modal').innerHTML=`<div class="modal-head"><div><h2>${i==='new'?'Novo responsável':r.nome}</h2><div class="mh-sub">Cadastro</div></div><button class="modal-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="field"><label>Nome</label><input id="r_nome" value="${r.nome}"></div>
+        <div class="field-row"><div class="field"><label>Cargo</label><input id="r_cargo" value="${r.cargo}"></div>
+        <div class="field"><label>Área</label><select id="r_area">${so(S.areas,r.area)}</select></div></div>
+        <div class="field-row"><div class="field"><label>E-mail</label><input id="r_email" value="${r.email}"></div>
+        <div class="field"><label>Gestor</label><input id="r_gestor" value="${r.gestor}"></div></div>
+      </div>
+      <div class="modal-foot">${i!=='new'?`<button class="btn ghost" style="margin-right:auto;color:var(--vermelho)" onclick="App.delResp(${i})">Excluir</button>`:''}
+      <button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.saveResp(${i==='new'?"'new'":i})">Salvar</button></div>`;
+    this.openModal();
+  },
+  saveResp(i){const g=x=>document.getElementById(x).value;const r={nome:g('r_nome'),cargo:g('r_cargo'),area:g('r_area'),email:g('r_email'),gestor:g('r_gestor')};
+    if(i==='new')S.responsaveis.push(r);else S.responsaveis[i]=r;save();this.renderUserSelect();this.closeModal();this.go(currentView);this.toast('Responsável salvo');},
+  delResp(i){
+    const r=S.responsaveis[i];if(!r)return;
+    let vinc=0;Object.values(S.competencias).forEach(c=>(c.atividades||[]).forEach(a=>{if([a.responsavelExec,a.responsavelEnvio,a.aprovador].includes(r.nome))vinc++;}));
+    const msg=vinc?`${r.nome} está vinculado(a) a ${vinc} atividade(s) em uma ou mais competências.\nAs atividades continuarão com o nome registrado, mas ele(a) deixará de aparecer nas listas de seleção.\n\nExcluir mesmo assim?`:`Excluir ${r.nome}?`;
+    if(!confirm(msg))return;
+    S.responsaveis.splice(i,1);
+    if(!S.responsaveis.some(x=>x.nome===S.usuarioAtual))S.usuarioAtual=S.responsaveis[0]?S.responsaveis[0].nome:'';
+    save();this.renderUserSelect();this.closeModal();this.go(currentView);this.toast('Responsável excluído');},
+
+  /* ---------- REVISÃO / BANCO ---------- */
+  openRevisao(i){
+    const rev=S.revisaoAnalitica[S.competenciaAtiva]||[];
+    const r=i==='new'?{conta:'',variacao:'',justificativa:'',responsavel:me(),status:'nao_iniciado'}:rev[i];
+    const so=(arr,sel)=>arr.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('');
+    const stOpts=['nao_iniciado','andamento','concluido'].map(s=>`<option value="${s}" ${s===r.status?'selected':''}>${STATUS[s].lbl}</option>`).join('');
+    const contaOpts=`<option value="">— selecione a conta —</option>`+S.planoContas.map(p=>`<option value="${p.codigo}" ${p.codigo===r.conta?'selected':''}>${p.codigo} · ${p.nome}</option>`).join('');
+    document.getElementById('modal').innerHTML=`
+      <div class="modal-head"><div><h2>${i==='new'?'Nova variação':'Editar variação'}</h2><div class="mh-sub">Revisão analítica · ${comp().label}</div></div><button class="modal-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="field"><label>Conta</label><select id="rv_conta">${contaOpts}</select></div>
+        <div class="field-row"><div class="field"><label>Variação</label><input id="rv_var" value="${r.variacao}" placeholder="ex.: +5,2%"></div>
+        <div class="field"><label>Status</label><select id="rv_status">${stOpts}</select></div></div>
+        <div class="field"><label>Responsável</label><select id="rv_resp">${so(S.responsaveis.map(x=>x.nome),r.responsavel)}</select></div>
+        <div class="field"><label>Justificativa</label><textarea id="rv_just">${r.justificativa}</textarea></div>
+      </div>
+      <div class="modal-foot">${i!=='new'?`<button class="btn ghost" style="margin-right:auto;color:var(--vermelho)" onclick="App.delRevisao(${i})">Excluir</button>`:''}
+      <button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.saveRevisao(${i==='new'?"'new'":i})">Salvar</button></div>`;
+    this.openModal();
+  },
+  saveRevisao(i){
+    const g=x=>document.getElementById(x).value;
+    const item={conta:g('rv_conta'),variacao:g('rv_var')||'—',justificativa:g('rv_just'),responsavel:g('rv_resp'),status:g('rv_status')};
+    if(!item.conta){alert('Selecione uma conta.');return;}
+    const arr=(S.revisaoAnalitica[S.competenciaAtiva]=S.revisaoAnalitica[S.competenciaAtiva]||[]);
+    if(i==='new')arr.push(item);else arr[i]=item;
+    save();this.closeModal();this.go('revisao');this.toast('Variação salva');
+  },
+  delRevisao(i){
+    if(!confirm('Excluir esta variação?'))return;
+    (S.revisaoAnalitica[S.competenciaAtiva]||[]).splice(i,1);
+    save();this.closeModal();this.go('revisao');this.toast('Variação excluída');
+  },
+  addBanco(){const n=prompt('Nome da atividade padrão:');if(!n)return;S.bancoAtividades.push(n);save();this.go('config');},
+  rmBanco(i){S.bancoAtividades.splice(i,1);save();this.go('config');},
+
+  /* ---------- NOVO FECHAMENTO / DUPLICAR ---------- */
+  duplicarFechamento(){
+    const target=document.getElementById('dupComp').value;
+    if(S.competencias[target]&&!confirm(`${compLabel(target)} já existe. Sobrescrever?`))return;
+    const src=comp();const shift=(parse(target+'-01').getFullYear()-parse(S.competenciaAtiva+'-01').getFullYear())*12+(parse(target+'-01').getMonth()-parse(S.competenciaAtiva+'-01').getMonth());
+    const nova=JSON.parse(JSON.stringify(src));
+    nova.key=target;nova.label=compLabel(target);nova.encerrado=false;
+    nova.inicio=this.shiftDate(src.inicio,shift);nova.prazo=this.shiftDate(src.prazo,shift);
+    nova.atividades.forEach(a=>{a.dataInicio=this.shiftDate(a.dataInicio,shift);a.prazo=this.shiftDate(a.prazo,shift);a.status='nao_iniciado';a.dataConclusao='';a.evidencias=[];a.obs='';a.ultimaAtualizacao=nowStamp();a.historico=[{quem:'Sistema',acao:'Atividade criada (duplicada de '+src.label+')',de:'',para:'nao_iniciado',data:nowStamp(),obs:''}];});
+    S.competencias[target]=nova;S.competenciaAtiva=target;save();this.renderCompSelect();document.getElementById('compSelect').value=target;this.renderNav();this.go('home');this.refreshNotif();this.toast('Fechamento '+nova.label+' criado');
+  },
+  shiftDate(s,months){const d=parse(s);d.setMonth(d.getMonth()+months);return iso(d);},
+  encerrarFechamento(){const k=this.kpis();if(k.pct<100&&!confirm(`Fechamento está em ${k.pct}%. Encerrar mesmo assim?`))return;comp().encerrado=true;save();this.go('config');this.toast('Fechamento encerrado');},
+
+  /* ====================================================================
+     NOTIFICAÇÕES
+     ==================================================================== */
+  toggleNotif(){document.getElementById('notifPanel').classList.toggle('open');},
+  buildNotifs(){
+    const A=ativs();const t=today();const out=[];
+    const atr=A.filter(a=>effStatus(a)==='atrasado');
+    const amanha=A.filter(a=>a.prazo===addDays(t,1)&&effStatus(a)!=='concluido');
+    const aguard=A.filter(a=>effStatus(a)==='aguardando');
+    const concl=A.filter(a=>effStatus(a)==='concluido');
+    if(atr.length)out.push({ic:'🔴',bg:'var(--vermelho-l)',t:`${atr.length} atividade(s) atrasada(s)`,d:atr.map(a=>a.atividade).slice(0,2).join(', '),go:atr[0].id});
+    if(amanha.length)out.push({ic:'🟡',bg:'var(--amarelo-l)',t:`${amanha.length} atividade(s) vencem amanhã`,d:amanha.map(a=>a.atividade).slice(0,2).join(', '),go:amanha[0].id});
+    if(aguard.length)out.push({ic:'🔵',bg:'var(--azul-l)',t:`${aguard.length} informação(ões) aguardando envio`,d:aguard.map(a=>a.areaFornecedora).slice(0,2).join(', '),go:aguard[0].id});
+    if(concl.length)out.push({ic:'🟢',bg:'var(--verde-l)',t:`${concl.length} atividade(s) concluída(s)`,d:'Com evidência anexada',go:concl[0].id});
+    return out;
+  },
+  refreshNotif(){
+    const n=this.buildNotifs();
+    document.getElementById('notifDot').style.display=this.kpis().atr>0?'block':'none';
+    document.getElementById('notifList').innerHTML=n.map(x=>`<div class="notif-item" onclick="App.toggleNotif();App.openAtiv(${x.go})"><div class="ni" style="background:${x.bg}">${x.ic}</div><div><div class="nt">${x.t}</div><div class="nd">${x.d}</div></div></div>`).join('')||'<div class="empty" style="padding:30px">Sem notificações.</div>';
+    document.querySelectorAll('#nav a').forEach(a=>{const id=a.dataset.v;const b=this.navBadge(id);const old=a.querySelector('.badge');if(old)old.remove();if(b)a.insertAdjacentHTML('beforeend',b);});
+  },
+
+  /* ====================================================================
+     EXPORTAÇÃO
+     ==================================================================== */
+  exportPDF(){window.print();},
+  exportExcel(){
+    this.toast('Preparando Excel…');
+    const build=()=>{
+      const XLSX=window.XLSX;const wb=XLSX.utils.book_new();
+      const crono=this.filteredAtivs().map(a=>({ID:a.id,Etapa:a.etapa,Atividade:a.atividade,Descrição:a.descricao,Início:fmtFull(a.dataInicio),Prazo:fmtFull(a.prazo),'Responsável':a.responsavelExec,'Área resp.':a.areaResponsavel,'Área forn.':a.areaFornecedora,'Envio':a.responsavelEnvio,Prioridade:a.prioridade,Contas:a.contas.join(', '),Status:STATUS[effStatus(a)].lbl,'Conclusão':fmtFull(a.dataConclusao)}));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(crono),'Cronograma');
+      const pend=this.filteredAtivs().filter(a=>effStatus(a)!=='concluido').map(a=>({Atividade:a.atividade,Responsável:a.responsavelExec,Prazo:fmtFull(a.prazo),Status:STATUS[effStatus(a)].lbl}));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(pend),'Pendências');
+      const ca=[];S.planoContas.forEach(p=>{const at=ativs().find(a=>a.contas.includes(p.codigo));ca.push({Conta:p.codigo,Descrição:p.nome,Materialidade:p.materialidade,Atividade:at?at.atividade:'(sem atividade)',Status:at?STATUS[effStatus(at)].lbl:'—'});});
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ca),'Conta x Atividade');
+      const resp=S.responsaveis.map(r=>{const at=ativs().filter(a=>a.responsavelExec===r.nome);return {Nome:r.nome,Área:r.area,Atividades:at.length,Pendências:at.filter(a=>effStatus(a)!=='concluido').length,Atrasos:at.filter(a=>effStatus(a)==='atrasado').length};});
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resp),'Por responsável');
+      XLSX.writeFile(wb,`allu_fechamento_${S.competenciaAtiva}.xlsx`);
+      this.toast('Excel exportado ✓');
+    };
+    if(window.XLSX){build();return;}
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=build;s.onerror=()=>this.toast('Falha ao carregar biblioteca de Excel (verifique a rede).');
+    document.head.appendChild(s);
+  },
+
+  /* ---------- infra modal / toast ---------- */
+  openModal(){document.getElementById('overlay').classList.add('open');},
+  closeModal(){document.getElementById('overlay').classList.remove('open');},
+  toast(msg){const t=document.getElementById('toast');t.innerHTML=`<span class="ti">●</span>${msg}`;t.classList.add('show');clearTimeout(this._tt);this._tt=setTimeout(()=>t.classList.remove('show'),2400);}
+};
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){App.closeModal();document.getElementById('notifPanel').classList.remove('open');}});
+async function boot(){
+  if(!CLOUD){                                   // arquivo ainda não configurado → preview local
+    S=loadLocal();App.mostrarApp();App.init();marcarSync('local');return;
+  }
+  if(!window.supabase||!sb){
+    App.erroLogin('Não foi possível carregar o login. Sua rede pode estar bloqueando o CDN do Supabase — me avise para embutir no próprio arquivo.');return;
+  }
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session)await App.entrarComSessao(session);else App.mostrarLogin();
+    sb.auth.onAuthStateChange(async(_ev,sess)=>{ if(sess&&!S)await App.entrarComSessao(sess); });
+  }catch(e){ App.erroLogin('Erro ao iniciar a sessão: '+(e.message||e)); }
+}
+boot();
+</script>
+</body>
+</html>
