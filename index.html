@@ -428,6 +428,58 @@ function nthDiaUtilComp(compKey,n){const alvo=addMonthsKey(compKey,1);const p=al
 function toArr(x){return Array.isArray(x)?x:(x?[x]:[]);}
 function nomes(x){const a=toArr(x);return a.length?a.join(', '):'—';}
 function prazoDULabel(a){return a&&a.prazoDiaUtil?' ('+a.prazoDiaUtil+'º dia útil)':'';}
+function ultimoDiaUtilComp(compKey){const alvo=addMonthsKey(compKey,1);const p=alvo.split('-').map(Number);const y=p[0],m=p[1];let d=new Date(y,m,0);for(let i=0;i<10;i++){if(ehDiaUtil(d))return iso(d);d.setDate(d.getDate()-1);}return iso(new Date(y,m,0));}
+const CRONOGRAMA_ALLU=[{a:'.EXTERNO: Extratos bancários',du:1,etapa:'Externo'},
+  {a:'.EXTERNO: Controle de horas para capitalização',du:2,etapa:'Externo'},
+  {a:'.EXTERNO: FOPAG',du:2,etapa:'Externo'},
+  {a:'Bancos - Conta Corrente',du:1,etapa:'Tesouraria'},
+  {a:'Bancos - Cartão de Crédito',du:2,etapa:'Tesouraria'},
+  {a:'Empréstimos bancários',du:1,etapa:'Tesouraria'},
+  {a:'Apropriação de seguros',du:1,etapa:'Conciliações'},
+  {a:'Lançamentos sem centro de custo',du:1,etapa:'Contábil'},
+  {a:'Reconhecimento Permutas',du:1,etapa:'Conciliações'},
+  {a:'Arrendamento Mercantil',du:1,etapa:'Ativo'},
+  {a:'Adquirentes',du:2,etapa:'Conciliações'},
+  {a:'Estoque',du:2,etapa:'Conciliações'},
+  {a:'Baixa de Sinistros',du:2,etapa:'Conciliações'},
+  {a:'Fornecedores',du:2,etapa:'Conciliações'},
+  {a:'Partes Relacionadas',du:2,etapa:'Conciliações'},
+  {a:'Receitas com locação',du:2,etapa:'Receita'},
+  {a:'Contabilização FOPAG',du:3,etapa:'Folha'},
+  {a:'Capitalização da FOPAG no intangível',du:3,etapa:'Folha'},
+  {a:'Transferência de FOPAG LOG pro custo',du:3,etapa:'Folha'},
+  {a:'Ativo imobilizado',du:3,etapa:'Ativo'},
+  {a:'Ativo Intangível',du:3,etapa:'Ativo'},
+  {a:'Finalizar as contas transitórias - Imob',du:3,etapa:'Ativo'},
+  {a:'Reconciliação bancária',du:3,etapa:'Tesouraria'},
+  {a:'Bens em Posse de Terceiros',du:3,etapa:'Ativo'},
+  {a:'Clientes',du:4,etapa:'Conciliações'},
+  {a:'Empréstimos com terceiros',du:4,etapa:'Conciliações'},
+  {a:'Bancos - Aplicações',du:4,etapa:'Tesouraria'},
+  {a:'Encerramento do período SAP',du:5,etapa:'Fechamento'},
+  {a:'Construção da DFC - Financeiro',du:5,etapa:'Fechamento'},
+  {a:'Balancete Final - Pack Reporting',du:5,etapa:'Fechamento'},
+  {a:'Construção da DF',du:5,etapa:'Fechamento'},
+  {a:'Entrada Fiscal',du:1,etapa:'Fiscal'},
+  {a:'Check notas entradas X Arquivei',du:1,etapa:'Fiscal'},
+  {a:'Apuração ISS retido',du:2,etapa:'Fiscal'},
+  {a:'Crédito PIS/COFINS',du:2,etapa:'Fiscal'},
+  {a:'Apuração de PIS/COFINS',du:2,etapa:'Fiscal'},
+  {a:'Capitalização de ICMS',du:2,etapa:'Fiscal'},
+  {a:'Impostos a Recuperar',du:3,etapa:'Fiscal'},
+  {a:'Conciliação dos parcelamentos tributários',du:3,etapa:'Fiscal'},
+  {a:'ICMS Difal',du:3,etapa:'Fiscal'},
+  {a:'Apuração IR/CS (Corrente e Diferido)',du:4,etapa:'Fiscal'},
+  {a:'Decêndios IR Investidor 3/3 (retroativo)',dia:3,etapa:'Obrigações acessórias',txt:'Dias 1 a 3'},
+  {a:'Decêndios IR Investidor 1/3',dia:13,etapa:'Obrigações acessórias',txt:'Dias 12 a 13'},
+  {a:'Decêndios IR Investidor 2/3',dia:25,etapa:'Obrigações acessórias',txt:'Dias 22 a 25'},
+  {a:'MIT - Módulo de Integração de Tributos',ultimoDU:true,etapa:'Obrigações acessórias',txt:'Último dia útil do mês'},
+  {a:'REINF',dia:15,etapa:'Obrigações acessórias',txt:'Até dia 15'},
+  {a:'DCTF Web',dia:15,etapa:'Obrigações acessórias',txt:'Até dia 15'},
+  {a:'Conferência de CNDs',dia:20,etapa:'Obrigações acessórias',txt:'Até dia 20'},
+  {a:'REINF (1)',dia:15,etapa:'Obrigações acessórias',txt:'Até dia 15'},
+  {a:'DCTF Web (1)',dia:15,etapa:'Obrigações acessórias',txt:'Até dia 15'},
+  {a:'Conferência de CNDs (1)',dia:20,etapa:'Obrigações acessórias',txt:'Até dia 20'}];
 function nowStamp(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 
 /* ---------- metadados de status ---------- */
@@ -1250,6 +1302,11 @@ const App={
         </div>
       </div>
       <div class="card card-pad" style="margin-top:16px">
+        <div class="sec-title">Cronograma oficial allu</div>
+        <p class="cell-sub" style="margin-bottom:12px">Carrega o cronograma completo de fechamento da allu (${CRONOGRAMA_ALLU.length} atividades) na competência atual, com os prazos por dia útil já preenchidos. Depois é só ajustar responsáveis, contas e áreas. <b>Atenção:</b> substitui as atividades da competência atual.</p>
+        <button class="btn" onclick="App.carregarCronogramaAllu()">Carregar cronograma oficial</button>
+      </div>
+      <div class="card card-pad" style="margin-top:16px">
         <div class="split-head"><div class="sec-title" style="margin:0">Biblioteca de atividades padrão</div>
         <button class="btn ghost sm" onclick="App.addBanco()">+ Adicionar</button></div>
         <div class="tags">${S.bancoAtividades.map((b,i)=>`<span class="tag" style="font-family:'DM Sans'">${b} <span style="cursor:pointer;color:var(--txt-3)" onclick="App.rmBanco(${i})">✕</span></span>`).join('')}</div>
@@ -1375,6 +1432,25 @@ const App={
       A.push(Object.assign({id:nid,evidencias:[],dataConclusao:'',raci:{R:nomes(data.responsavelExec),A:data.aprovador,C:nomes(data.responsavelEnvio),I:'Isa Rocha'},lembretes:['D-2','D-1','D0'],historico:[{quem:'Controladoria',acao:'Atividade criada',de:'',para:data.status,data:nowStamp(),obs:''}]},data));
     }
     save();this.toast(id?'Atividade atualizada':'Atividade criada');this.closeModal();this.go(currentView);this.refreshNotif();
+  },
+  carregarCronogramaAllu(){
+    if(!confirm('Isto vai SUBSTITUIR as atividades da competência atual ('+comp().label+') pelo cronograma oficial da allu ('+CRONOGRAMA_ALLU.length+' atividades), com os prazos já preenchidos.\n\nAs atividades atuais serão removidas. Continuar?'))return;
+    const ck=S.competenciaAtiva, alvo=addMonthsKey(ck,1);
+    const r0=me()||(S.responsaveis[0]&&S.responsaveis[0].nome)||'', a0=S.areas[0]||'';
+    const ini=nthDiaUtilComp(ck,1);
+    comp().atividades=CRONOGRAMA_ALLU.map((it,i)=>{
+      let prazo, pdu=0, obs='';
+      if(it.du){pdu=it.du;prazo=nthDiaUtilComp(ck,it.du);obs='Prazo: até '+it.du+'º dia útil';}
+      else if(it.ultimoDU){prazo=ultimoDiaUtilComp(ck);obs='Prazo: '+(it.txt||'último dia útil do mês');}
+      else{prazo=alvo+'-'+String(it.dia).padStart(2,'0');obs='Prazo: '+(it.txt||('dia '+it.dia));}
+      return {id:i+1,etapa:it.etapa||'Geral',atividade:it.a,descricao:'',dataInicio:ini,prazo:prazo,prazoDiaUtil:pdu,
+        responsavelExec:[r0],areaResponsavel:a0,areaFornecedora:a0,responsavelEnvio:[r0],aprovador:r0,
+        status:'nao_iniciado',prioridade:'media',dependencias:[],contas:[],centroCusto:'',obs:obs,
+        evidencias:[],dataConclusao:'',ultimaAtualizacao:nowStamp(),evidObrig:false,
+        raci:{R:r0,A:r0,C:r0,I:'Isa Rocha'},lembretes:['D-2','D-1','D0'],
+        historico:[{quem:'Sistema',acao:'Atividade criada (cronograma oficial allu)',de:'',para:'nao_iniciado',data:nowStamp(),obs:''}]};
+    });
+    save();this.go('cronograma');this.toast(CRONOGRAMA_ALLU.length+' atividades carregadas');
   },
   previewPrazoDU(){const du=Number(document.getElementById('f_prazodu').value)||0;const inp=document.getElementById('f_prazo');if(du>0){inp.value=nthDiaUtilComp(S.competenciaAtiva,du);inp.disabled=true;inp.style.opacity=.6;}else{inp.disabled=false;inp.style.opacity=1;}},
   delAtiv(id){if(!confirm('Excluir esta atividade?'))return;comp().atividades=ativs().filter(a=>a.id!==id);save();this.closeModal();this.go(currentView);this.refreshNotif();this.toast('Atividade excluída');},
