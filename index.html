@@ -421,6 +421,13 @@ function fmtFull(s){if(!s)return '—';const d=parse(s);return `${String(d.getDa
 function today(){return iso(new Date());}
 function isWeekend(s){const w=parse(s).getDay();return w===0||w===6;}
 function bizDaysBetween(a,b){let c=0,d=parse(a),end=parse(b);if(d>end)return 0;while(d<=end){const w=d.getDay();if(w!==0&&w!==6)c++;d.setDate(d.getDate()+1);}return c;}
+const FERIADOS_PADRAO=['2026-01-01','2026-02-16','2026-02-17','2026-04-03','2026-04-21','2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02','2026-11-15','2026-11-20','2026-12-25'];
+function feriados(){return (typeof S!=='undefined'&&S&&S.feriados)?S.feriados:FERIADOS_PADRAO;}
+function ehDiaUtil(d){const w=d.getDay();if(w===0||w===6)return false;return !feriados().includes(iso(d));}
+function nthDiaUtilComp(compKey,n){const alvo=addMonthsKey(compKey,1);const p=alvo.split('-').map(Number);const y=p[0],m=p[1];let d=new Date(y,m-1,1),cont=0;for(let i=0;i<45;i++){if(d.getMonth()!==m-1)break;if(ehDiaUtil(d)){cont++;if(cont===n)return iso(d);}d.setDate(d.getDate()+1);}return iso(new Date(y,m-1,1));}
+function toArr(x){return Array.isArray(x)?x:(x?[x]:[]);}
+function nomes(x){const a=toArr(x);return a.length?a.join(', '):'—';}
+function prazoDULabel(a){return a&&a.prazoDiaUtil?' ('+a.prazoDiaUtil+'º dia útil)':'';}
 function nowStamp(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
 
 /* ---------- metadados de status ---------- */
@@ -525,7 +532,7 @@ function seed(){
         centroCusto:a.centroCusto||'', obs:a.obs||'', evidencias:done?[{nome:'evidencia_'+a.etapa.toLowerCase()+'.xlsx',data:nowStamp()}]:[],
         dataConclusao:done?addDays(a.prazo,0):'', ultimaAtualizacao:nowStamp(),
         evidObrig:a.evidObrig!==false,
-        raci:{R:a.responsavelExec,A:a.aprovador,C:a.responsavelEnvio,I:'Isa Rocha'},
+        raci:{R:nomes(a.responsavelExec),A:a.aprovador,C:nomes(a.responsavelEnvio),I:'Isa Rocha'},
         lembretes:['D-2','D-1','D0'],
         historico:[{quem:'Sistema',acao:'Atividade criada no fechamento',de:'',para:done?'concluido':a.status,data:nowStamp(),obs:''}]
       };
@@ -559,7 +566,7 @@ function seed(){
   return {
     competenciaAtiva:compAtiva, competencias, planoContas, responsaveis, areas,
     bancoAtividades:banco, revisaoAnalitica:revisao, emailLog, perfil:'admin',
-    usuarioAtual:responsaveis[0].nome,
+    usuarioAtual:responsaveis[0].nome, feriados:FERIADOS_PADRAO.slice(),
     slaMeta:2
   };
 }
@@ -751,7 +758,7 @@ const App={
   },
   navBadge(id){
     if(id==='cronograma'||id==='painel'){
-      const n=ativs().filter(a=>effStatus(a)==='atrasado'&&(id!=='painel'||a.responsavelExec===me())).length;
+      const n=ativs().filter(a=>effStatus(a)==='atrasado'&&(id!=='painel'||toArr(a.responsavelExec).includes(me()))).length;
       return n?`<span class="badge">${n}</span>`:'';
     }
     return '';
@@ -784,7 +791,7 @@ const App={
     const atr=A.filter(a=>effStatus(a)==='atrasado').length;
     const blo=A.filter(a=>effStatus(a)==='bloqueado').length;
     const pct=total?Math.round(concl/total*100):0;
-    const respPend=new Set(A.filter(a=>effStatus(a)==='atrasado').map(a=>a.responsavelEnvio)).size;
+    const respPend=new Set(A.filter(a=>effStatus(a)==='atrasado').flatMap(a=>toArr(a.responsavelEnvio))).size;
     const c=comp();
     const diasUteis=c.prazo>=today()?bizDaysBetween(today(),c.prazo):0;
     return {total,concl,and,agu,nao,atr,blo,pct,respPend,diasUteis,inicio:c.inicio,prazo:c.prazo};
@@ -827,7 +834,7 @@ const App={
             <tbody>${proximos.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
               <td class="cell-strong">${this.prazoTag(a)}</td>
               <td>${a.atividade}</td>
-              <td class="cell-sub">${a.responsavelExec}</td>
+              <td class="cell-sub">${nomes(a.responsavelExec)}</td>
               <td>${stPill(a)}</td></tr>`).join('')||'<tr><td colspan=4 class="empty">Sem pendências 🎉</td></tr>'}</tbody>
           </table></div>
         </div>
@@ -914,12 +921,12 @@ const App={
     const f=cronoFilters;
     return ativs().filter(a=>{
       if(f.area&&a.areaResponsavel!==f.area)return false;
-      if(f.resp&&a.responsavelExec!==f.resp)return false;
+      if(f.resp&&!toArr(a.responsavelExec).includes(f.resp))return false;
       if(f.status&&effStatus(a)!==f.status)return false;
       if(f.prio&&a.prioridade!==f.prio)return false;
       if(f.etapa&&a.etapa!==f.etapa)return false;
       if(f.atrasadas&&effStatus(a)!=='atrasado')return false;
-      if(f.q){const hay=(a.atividade+' '+a.descricao+' '+a.responsavelExec+' '+a.contas.join(' ')+' '+a.etapa).toLowerCase();if(!hay.includes(f.q))return false;}
+      if(f.q){const hay=(a.atividade+' '+a.descricao+' '+toArr(a.responsavelExec).join(' ')+' '+a.contas.join(' ')+' '+a.etapa).toLowerCase();if(!hay.includes(f.q))return false;}
       return true;
     });
   },
@@ -952,7 +959,7 @@ const App={
             <td class="mono cell-sub">#${String(a.id).padStart(2,'0')}</td>
             <td><span class="cell-sub">${a.etapa}</span></td>
             <td class="cell-strong">${a.atividade}${a.dependencias.length?' <span class="cell-sub">⛓</span>':''}</td>
-            <td>${a.responsavelExec}</td>
+            <td>${nomes(a.responsavelExec)}</td>
             <td class="cell-sub">${a.areaFornecedora}</td>
             <td class="cell-sub">${fmt(a.dataInicio)}</td>
             <td class="cell-strong">${this.prazoTag(a)}</td>
@@ -979,7 +986,7 @@ const App={
       const si=days.indexOf(a.dataInicio),ei=days.indexOf(a.prazo);
       const left=Math.max(0,si)/nd*100;const width=Math.max(1,(ei-Math.max(0,si)+1))/nd*100;
       const col=STATUS[effStatus(a)].cor;
-      return `<div class="gantt-row"><div class="gantt-lbl" title="${a.atividade}">${a.atividade}<small>${a.responsavelExec}</small></div>
+      return `<div class="gantt-row"><div class="gantt-lbl" title="${a.atividade}">${a.atividade}<small>${nomes(a.responsavelExec)}</small></div>
         <div class="gantt-track">
           ${days.map(dd=>`<div class="gantt-cell ${isWeekend(dd)?'we':''}" style="left:${days.indexOf(dd)/nd*100}%;width:${colW}"></div>`).join('')}
           ${tIdx>=0?`<div class="gantt-today" style="left:${(tIdx+0.5)/nd*100}%"></div>`:''}
@@ -1022,7 +1029,7 @@ const App={
      ==================================================================== */
   view_painel(){
     const meNome=me();
-    const minhas=ativs().filter(a=>a.responsavelExec===meNome);
+    const minhas=ativs().filter(a=>toArr(a.responsavelExec).includes(meNome));
     const t=today();
     const hoje=minhas.filter(a=>a.prazo===t&&effStatus(a)!=='concluido');
     const atr=minhas.filter(a=>effStatus(a)==='atrasado');
@@ -1055,7 +1062,7 @@ const App={
         <b style="font-size:15px">${sel}</b> — você possui <b>${list.length}</b> informação(ões) pendente(s) para o fechamento de ${comp().label}.
       </div>
       ${list.length?list.map((a,i)=>`<div class="evid" style="cursor:pointer;padding:13px 15px" onclick="App.openAtiv(${a.id})">
-        <span class="ei">${i+1}</span><div style="flex:1"><b>${a.atividade}</b><div class="cell-sub">Solicitado por ${a.areaResponsavel} · Envio: ${a.responsavelEnvio}</div></div>
+        <span class="ei">${i+1}</span><div style="flex:1"><b>${a.atividade}</b><div class="cell-sub">Solicitado por ${a.areaResponsavel} · Envio: ${nomes(a.responsavelEnvio)}</div></div>
         <div style="text-align:right"><div class="cell-strong">${this.prazoTag(a)}</div>${stPill(a)}</div></div>`).join(''):'<div class="empty"><div class="ee">✅</div><h3>Sem pendências</h3>Todas as informações desta área foram entregues.</div>'}`;
   },
 
@@ -1106,7 +1113,7 @@ const App={
           <td class="mono cell-strong">${p.codigo}</td><td>${p.nome}</td>
           <td><span class="mat ${p.materialidade}">${p.materialidade}</span></td>
           <td>${a?a.atividade:'<span style="color:var(--vermelho)">⚠ sem atividade vinculada</span>'}</td>
-          <td class="cell-sub">${a?a.responsavelExec:'—'}</td>
+          <td class="cell-sub">${a?nomes(a.responsavelExec):'—'}</td>
           <td class="cell-sub">${a?fmt(a.prazo):'—'}</td>
           <td>${a?stPill(a):'<span class="st nao_iniciado"><span class="d"></span>—</span>'}</td></tr>`).join('')}</tbody></table></div>`;
   },
@@ -1167,7 +1174,7 @@ const App={
     const pctEvid=k.total?Math.round(comEvid/k.total*100):0;
     const realizado=(S.slaMeta+0.4).toFixed(1);
     const porArea=this.rankArea();
-    const porResp={};A.forEach(a=>{if(effStatus(a)==='atrasado'){porResp[a.responsavelExec]=(porResp[a.responsavelExec]||0)+1;}});
+    const porResp={};A.forEach(a=>{if(effStatus(a)==='atrasado'){toArr(a.responsavelExec).forEach(n=>porResp[n]=(porResp[n]||0)+1);}});
     const respRows=Object.entries(porResp).sort((a,b)=>b[1]-a[1]);
     return `<div class="page-head"><div><h1>Indicadores do fechamento</h1><p>Performance da competência ${comp().label}</p></div>
       <button class="btn ghost" onclick="App.exportPDF()">Exportar PDF</button></div>
@@ -1207,7 +1214,7 @@ const App={
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Nome</th><th>Cargo</th><th>Área</th><th>E-mail</th><th>Gestor</th><th>Ativ.</th><th>Pendências</th><th>Atrasos</th><th style="text-align:right">Ações</th></tr></thead>
         <tbody>${S.responsaveis.map((r,i)=>{
-          const at=ativs().filter(a=>a.responsavelExec===r.nome);
+          const at=ativs().filter(a=>toArr(a.responsavelExec).includes(r.nome));
           const pend=at.filter(a=>effStatus(a)!=='concluido').length;
           const atr=at.filter(a=>effStatus(a)==='atrasado').length;
           return `<tr class="clk" onclick="App.openResp(${i})"><td class="cell-strong">${r.nome}</td><td class="cell-sub">${r.cargo}</td>
@@ -1283,14 +1290,14 @@ const App={
         </div>
         <div class="detail-block"><p>${a.descricao||'Sem descrição.'}</p></div>
         <div class="detail-block"><h4>Informações</h4><div class="dl">
-          <div class="di"><div class="k">Responsável (executa)</div><div class="v">${a.responsavelExec}</div></div>
+          <div class="di"><div class="k">Responsável (executa)</div><div class="v">${nomes(a.responsavelExec)}</div></div>
           <div class="di"><div class="k">Área responsável</div><div class="v">${a.areaResponsavel}</div></div>
           <div class="di"><div class="k">Área fornecedora</div><div class="v">${a.areaFornecedora}</div></div>
-          <div class="di"><div class="k">Responsável pelo envio</div><div class="v">${a.responsavelEnvio}</div></div>
+          <div class="di"><div class="k">Responsável pelo envio</div><div class="v">${nomes(a.responsavelEnvio)}</div></div>
           <div class="di"><div class="k">Aprovador</div><div class="v">${a.aprovador}</div></div>
           <div class="di"><div class="k">Centro de custo</div><div class="v">${a.centroCusto||'—'}</div></div>
           <div class="di"><div class="k">Início</div><div class="v">${fmtFull(a.dataInicio)}</div></div>
-          <div class="di"><div class="k">Prazo</div><div class="v">${fmtFull(a.prazo)}</div></div>
+          <div class="di"><div class="k">Prazo</div><div class="v">${fmtFull(a.prazo)}${prazoDULabel(a)}</div></div>
         </div></div>
         <div class="detail-block"><h4>Contas contábeis vinculadas</h4><div class="tags">${contasHtml}</div></div>
         ${a.dependencias.length?`<div class="detail-block"><h4>Dependências ${canConclude?'':'<span style="color:var(--vermelho)">(pendentes)</span>'}</h4><div class="tags">${deps}</div></div>`:''}
@@ -1310,8 +1317,9 @@ const App={
   depsOk(a){return a.dependencias.every(d=>{const dd=ativById(d);return !dd||dd.status==='concluido';});},
 
   renderAtivForm(id){
-    const a=id?ativById(id):{id:'new',etapa:'',atividade:'',descricao:'',dataInicio:today(),prazo:addDays(today(),3),responsavelExec:S.responsaveis[0].nome,areaResponsavel:S.areas[0],areaFornecedora:S.areas[0],responsavelEnvio:S.responsaveis[0].nome,aprovador:S.responsaveis[0].nome,status:'nao_iniciado',prioridade:'media',contas:[],centroCusto:'',dependencias:[],evidObrig:true};
+    const a=id?ativById(id):{id:'new',etapa:'',atividade:'',descricao:'',dataInicio:today(),prazo:addDays(today(),3),responsavelExec:[S.responsaveis[0].nome],areaResponsavel:S.areas[0],areaFornecedora:S.areas[0],responsavelEnvio:[S.responsaveis[0].nome],aprovador:S.responsaveis[0].nome,status:'nao_iniciado',prioridade:'media',contas:[],centroCusto:'',dependencias:[],evidObrig:true,prazoDiaUtil:0};
     const so=(arr,sel)=>arr.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`).join('');
+    const somulti=(names,sel)=>{const sv=toArr(sel);return names.map(v=>`<option value="${v}" ${sv.includes(v)?'selected':''}>${v}</option>`).join('');};
     const respNames=S.responsaveis.map(r=>r.nome);
     document.getElementById('modal').innerHTML=`
       <div class="modal-head"><div><h2>${id?'Editar atividade':'Nova atividade'}</h2><div class="mh-sub">${comp().label}</div></div>
@@ -1322,11 +1330,13 @@ const App={
         <div class="field"><label>Prioridade</label><select id="f_prio">${so(['alta','media','baixa'],a.prioridade)}</select></div></div>
         <div class="field"><label>Descrição</label><textarea id="f_desc">${a.descricao}</textarea></div>
         <div class="field-row"><div class="field"><label>Data de início</label><input type="date" id="f_ini" value="${a.dataInicio}"></div>
-        <div class="field"><label>Prazo final</label><input type="date" id="f_prazo" value="${a.prazo}"></div></div>
-        <div class="field-row"><div class="field"><label>Responsável (executa)</label><select id="f_resp">${so(respNames,a.responsavelExec)}</select></div>
+        <div class="field"><label>Prazo por dia útil</label><select id="f_prazodu" onchange="App.previewPrazoDU()"><option value="0" ${!a.prazoDiaUtil?'selected':''}>— usar data manual —</option>${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15].map(n=>`<option value="${n}" ${a.prazoDiaUtil===n?'selected':''}>${n}º dia útil</option>`).join('')}</select></div></div>
+        <div class="field-row"><div class="field"><label>Prazo final (data)</label><input type="date" id="f_prazo" value="${a.prazo}" ${a.prazoDiaUtil?'disabled style="opacity:.6"':''}></div>
+        <div class="field"><label>&nbsp;</label><div class="cell-sub" style="padding-top:11px;line-height:1.4">Escolhendo um dia útil, a data é calculada sozinha (a partir do 1º dia útil do mês do fechamento).</div></div></div>
+        <div class="field-row"><div class="field"><label>Responsável (executa) <span class="cell-sub">— vários</span></label><select id="f_resp" multiple size="3" style="height:auto">${somulti(respNames,a.responsavelExec)}</select></div>
         <div class="field"><label>Área responsável</label><select id="f_area">${so(S.areas,a.areaResponsavel)}</select></div></div>
         <div class="field-row"><div class="field"><label>Área fornecedora</label><select id="f_areaf">${so(S.areas,a.areaFornecedora)}</select></div>
-        <div class="field"><label>Responsável pelo envio</label><select id="f_respenvio">${so(respNames,a.responsavelEnvio)}</select></div></div>
+        <div class="field"><label>Responsável pelo envio <span class="cell-sub">— vários</span></label><select id="f_respenvio" multiple size="3" style="height:auto">${somulti(respNames,a.responsavelEnvio)}</select></div></div>
         <div class="field-row"><div class="field"><label>Aprovador</label><select id="f_aprov">${so(respNames,a.aprovador)}</select></div>
         <div class="field"><label>Status</label><select id="f_status">${Object.keys(STATUS).map(s=>`<option value="${s}" ${s===a.status?'selected':''}>${STATUS[s].lbl}</option>`).join('')}</select></div></div>
         <div class="field-row"><div class="field"><label>Centro de custo</label><input id="f_cc" value="${a.centroCusto}"></div>
@@ -1345,11 +1355,13 @@ const App={
   saveAtiv(id){
     const g=x=>document.getElementById(x);
     const getMulti=x=>[...g(x).selectedOptions].map(o=>o.value);
+    const pdu=Number(g('f_prazodu').value)||0;
+    const prazoCalc=pdu>0?nthDiaUtilComp(S.competenciaAtiva,pdu):g('f_prazo').value;
     const data={
       etapa:g('f_etapa').value||'Geral', atividade:g('f_atividade').value||'Atividade sem nome',
-      descricao:g('f_desc').value, dataInicio:g('f_ini').value, prazo:g('f_prazo').value,
-      responsavelExec:g('f_resp').value, areaResponsavel:g('f_area').value, areaFornecedora:g('f_areaf').value,
-      responsavelEnvio:g('f_respenvio').value, aprovador:g('f_aprov').value, status:g('f_status').value,
+      descricao:g('f_desc').value, dataInicio:g('f_ini').value, prazo:prazoCalc, prazoDiaUtil:pdu,
+      responsavelExec:getMulti('f_resp'), areaResponsavel:g('f_area').value, areaFornecedora:g('f_areaf').value,
+      responsavelEnvio:getMulti('f_respenvio'), aprovador:g('f_aprov').value, status:g('f_status').value,
       prioridade:g('f_prio').value, centroCusto:g('f_cc').value, evidObrig:g('f_evidobrig').value==='1',
       contas:getMulti('f_contas'), dependencias:getMulti('f_deps').map(Number),
       ultimaAtualizacao:nowStamp()
@@ -1360,10 +1372,11 @@ const App={
       else a.historico.push({quem:'Controladoria',acao:'Atividade editada',de:'',para:'',data:nowStamp(),obs:''});
     }else{
       const nid=Math.max(0,...A.map(a=>a.id))+1;
-      A.push(Object.assign({id:nid,evidencias:[],dataConclusao:'',raci:{R:data.responsavelExec,A:data.aprovador,C:data.responsavelEnvio,I:'Isa Rocha'},lembretes:['D-2','D-1','D0'],historico:[{quem:'Controladoria',acao:'Atividade criada',de:'',para:data.status,data:nowStamp(),obs:''}]},data));
+      A.push(Object.assign({id:nid,evidencias:[],dataConclusao:'',raci:{R:nomes(data.responsavelExec),A:data.aprovador,C:nomes(data.responsavelEnvio),I:'Isa Rocha'},lembretes:['D-2','D-1','D0'],historico:[{quem:'Controladoria',acao:'Atividade criada',de:'',para:data.status,data:nowStamp(),obs:''}]},data));
     }
     save();this.toast(id?'Atividade atualizada':'Atividade criada');this.closeModal();this.go(currentView);this.refreshNotif();
   },
+  previewPrazoDU(){const du=Number(document.getElementById('f_prazodu').value)||0;const inp=document.getElementById('f_prazo');if(du>0){inp.value=nthDiaUtilComp(S.competenciaAtiva,du);inp.disabled=true;inp.style.opacity=.6;}else{inp.disabled=false;inp.style.opacity=1;}},
   delAtiv(id){if(!confirm('Excluir esta atividade?'))return;comp().atividades=ativs().filter(a=>a.id!==id);save();this.closeModal();this.go(currentView);this.refreshNotif();this.toast('Atividade excluída');},
   concluir(id){
     const a=ativById(id);
@@ -1465,7 +1478,7 @@ const App={
     if(i==='new')S.responsaveis.push(r);else S.responsaveis[i]=r;save();this.renderUserSelect();this.closeModal();this.go(currentView);this.toast('Responsável salvo');},
   delResp(i){
     const r=S.responsaveis[i];if(!r)return;
-    let vinc=0;Object.values(S.competencias).forEach(c=>(c.atividades||[]).forEach(a=>{if([a.responsavelExec,a.responsavelEnvio,a.aprovador].includes(r.nome))vinc++;}));
+    let vinc=0;Object.values(S.competencias).forEach(c=>(c.atividades||[]).forEach(a=>{if([...toArr(a.responsavelExec),...toArr(a.responsavelEnvio),a.aprovador].includes(r.nome))vinc++;}));
     const msg=vinc?`${r.nome} está vinculado(a) a ${vinc} atividade(s) em uma ou mais competências.\nAs atividades continuarão com o nome registrado, mas ele(a) deixará de aparecer nas listas de seleção.\n\nExcluir mesmo assim?`:`Excluir ${r.nome}?`;
     if(!confirm(msg))return;
     S.responsaveis.splice(i,1);
@@ -1516,7 +1529,7 @@ const App={
     const nova=JSON.parse(JSON.stringify(src));
     nova.key=target;nova.label=compLabel(target);nova.encerrado=false;
     nova.inicio=this.shiftDate(src.inicio,shift);nova.prazo=this.shiftDate(src.prazo,shift);
-    nova.atividades.forEach(a=>{a.dataInicio=this.shiftDate(a.dataInicio,shift);a.prazo=this.shiftDate(a.prazo,shift);a.status='nao_iniciado';a.dataConclusao='';a.evidencias=[];a.obs='';a.ultimaAtualizacao=nowStamp();a.historico=[{quem:'Sistema',acao:'Atividade criada (duplicada de '+src.label+')',de:'',para:'nao_iniciado',data:nowStamp(),obs:''}];});
+    nova.atividades.forEach(a=>{a.dataInicio=this.shiftDate(a.dataInicio,shift);a.prazo=a.prazoDiaUtil?nthDiaUtilComp(nova.key,a.prazoDiaUtil):this.shiftDate(a.prazo,shift);a.status='nao_iniciado';a.dataConclusao='';a.evidencias=[];a.obs='';a.ultimaAtualizacao=nowStamp();a.historico=[{quem:'Sistema',acao:'Atividade criada (duplicada de '+src.label+')',de:'',para:'nao_iniciado',data:nowStamp(),obs:''}];});
     S.competencias[target]=nova;S.competenciaAtiva=target;save();this.renderCompSelect();document.getElementById('compSelect').value=target;this.renderNav();this.go('home');this.refreshNotif();this.toast('Fechamento '+nova.label+' criado');
   },
   shiftDate(s,months){const d=parse(s);d.setMonth(d.getMonth()+months);return iso(d);},
@@ -1553,13 +1566,13 @@ const App={
     this.toast('Preparando Excel…');
     const build=()=>{
       const XLSX=window.XLSX;const wb=XLSX.utils.book_new();
-      const crono=this.filteredAtivs().map(a=>({ID:a.id,Etapa:a.etapa,Atividade:a.atividade,Descrição:a.descricao,Início:fmtFull(a.dataInicio),Prazo:fmtFull(a.prazo),'Responsável':a.responsavelExec,'Área resp.':a.areaResponsavel,'Área forn.':a.areaFornecedora,'Envio':a.responsavelEnvio,Prioridade:a.prioridade,Contas:a.contas.join(', '),Status:STATUS[effStatus(a)].lbl,'Conclusão':fmtFull(a.dataConclusao)}));
+      const crono=this.filteredAtivs().map(a=>({ID:a.id,Etapa:a.etapa,Atividade:a.atividade,Descrição:a.descricao,Início:fmtFull(a.dataInicio),Prazo:fmtFull(a.prazo),'Responsável':nomes(a.responsavelExec),'Área resp.':a.areaResponsavel,'Área forn.':a.areaFornecedora,'Envio':nomes(a.responsavelEnvio),Prioridade:a.prioridade,Contas:a.contas.join(', '),Status:STATUS[effStatus(a)].lbl,'Conclusão':fmtFull(a.dataConclusao)}));
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(crono),'Cronograma');
-      const pend=this.filteredAtivs().filter(a=>effStatus(a)!=='concluido').map(a=>({Atividade:a.atividade,Responsável:a.responsavelExec,Prazo:fmtFull(a.prazo),Status:STATUS[effStatus(a)].lbl}));
+      const pend=this.filteredAtivs().filter(a=>effStatus(a)!=='concluido').map(a=>({Atividade:a.atividade,Responsável:nomes(a.responsavelExec),Prazo:fmtFull(a.prazo),Status:STATUS[effStatus(a)].lbl}));
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(pend),'Pendências');
       const ca=[];S.planoContas.forEach(p=>{const at=ativs().find(a=>a.contas.includes(p.codigo));ca.push({Conta:p.codigo,Descrição:p.nome,Materialidade:p.materialidade,Atividade:at?at.atividade:'(sem atividade)',Status:at?STATUS[effStatus(at)].lbl:'—'});});
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ca),'Conta x Atividade');
-      const resp=S.responsaveis.map(r=>{const at=ativs().filter(a=>a.responsavelExec===r.nome);return {Nome:r.nome,Área:r.area,Atividades:at.length,Pendências:at.filter(a=>effStatus(a)!=='concluido').length,Atrasos:at.filter(a=>effStatus(a)==='atrasado').length};});
+      const resp=S.responsaveis.map(r=>{const at=ativs().filter(a=>toArr(a.responsavelExec).includes(r.nome));return {Nome:r.nome,Área:r.area,Atividades:at.length,Pendências:at.filter(a=>effStatus(a)!=='concluido').length,Atrasos:at.filter(a=>effStatus(a)==='atrasado').length};});
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resp),'Por responsável');
       XLSX.writeFile(wb,`allu_fechamento_${S.competenciaAtiva}.xlsx`);
       this.toast('Excel exportado ✓');
