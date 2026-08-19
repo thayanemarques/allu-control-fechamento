@@ -427,6 +427,14 @@ function ehDiaUtil(d){const w=d.getDay();if(w===0||w===6)return false;return !fe
 function nthDiaUtilComp(compKey,n){const alvo=addMonthsKey(compKey,1);const p=alvo.split('-').map(Number);const y=p[0],m=p[1];let d=new Date(y,m-1,1),cont=0;for(let i=0;i<45;i++){if(d.getMonth()!==m-1)break;if(ehDiaUtil(d)){cont++;if(cont===n)return iso(d);}d.setDate(d.getDate()+1);}return iso(new Date(y,m-1,1));}
 function toArr(x){return Array.isArray(x)?x:(x?[x]:[]);}
 function nomes(x){const a=toArr(x);return a.length?a.join(', '):'—';}
+function ehAdmin(){
+  if(!CLOUD)return true;                       // modo preview: acesso total
+  const email=(SESSAO_EMAIL||'').toLowerCase();
+  const admins=(S&&S.responsaveis||[]).filter(r=>r.admin&&r.email);
+  if(!admins.length)return true;               // ninguém definido ainda → todos podem (evita travar)
+  return admins.some(r=>(r.email||'').toLowerCase()===email);
+}
+function guardAdmin(){if(!ehAdmin()){App.toast('Sem permissão — apenas administradores editam.');return false;}return true;}
 function prazoDULabel(a){return a&&a.prazoDiaUtil?' ('+a.prazoDiaUtil+'º dia útil)':'';}
 function ultimoDiaUtilComp(compKey){const alvo=addMonthsKey(compKey,1);const p=alvo.split('-').map(Number);const y=p[0],m=p[1];let d=new Date(y,m,0);for(let i=0;i<10;i++){if(ehDiaUtil(d))return iso(d);d.setDate(d.getDate()-1);}return iso(new Date(y,m,0));}
 const CRONOGRAMA_ALLU=[{a:'.EXTERNO: Extratos bancários',du:1,etapa:'Externo'},
@@ -991,7 +999,7 @@ const App={
       <div style="display:flex;gap:8px">
         <button class="btn ghost" onclick="App.exportExcel()">Excel</button>
         <button class="btn ghost" onclick="App.exportPDF()">PDF</button>
-        <button class="btn" onclick="App.openAtiv('new')">+ Nova atividade</button>
+        ${ehAdmin()?`<button class="btn" onclick="App.openAtiv('new')">+ Nova atividade</button>`:''}
       </div></div>
 
       <div class="filters">
@@ -1124,11 +1132,11 @@ const App={
   view_plano(){
     const P=S.planoContas;
     return `<div class="page-head"><div><h1>Plano de contas</h1><p>${P.length} contas · vínculo com atividades e materialidade</p></div>
-      <div style="display:flex;gap:8px">
+      ${ehAdmin()?`<div style="display:flex;gap:8px">
         <button class="btn ghost" style="color:var(--vermelho)" onclick="App.limparPlano()">Limpar tudo</button>
         <button class="btn ghost" onclick="App.importPlano()">Importar</button>
         <button class="btn" onclick="App.openConta('new')">+ Nova conta</button>
-      </div></div>
+      </div>`:''}</div>
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Código</th><th>Conta</th><th>Grupo</th><th>Natureza</th><th>Área</th><th>Responsável</th><th>Materialidade</th><th>Atividade vinculada</th></tr></thead>
         <tbody>${P.map(p=>{const at=ativs().find(a=>a.contas.includes(p.codigo));
@@ -1193,7 +1201,7 @@ const App={
     const rev=S.revisaoAnalitica[S.competenciaAtiva]||[];
     const check=['Receita','Custos','Despesas','Financeiro','Pessoal','Impostos','Provisões','Ativo imobilizado','Arrendamentos','Contas patrimoniais','Contas a receber','Contas a pagar','Patrimônio líquido','DRE','Balanço','Fluxo de caixa'];
     return `<div class="page-head"><div><h1>Revisão analítica do fechamento</h1><p>Etapa final · liberada quando o fechamento avança para 100%</p></div>
-      <button class="btn" onclick="App.openRevisao('new')">+ Registrar variação</button></div>
+      ${ehAdmin()?`<button class="btn" onclick="App.openRevisao('new')">+ Registrar variação</button>`:''}</div>
       ${done<100?`<div class="card card-pad" style="background:var(--amarelo-l);border-color:transparent;margin-bottom:16px">⚠️ O fechamento está em <b>${done}%</b>. A revisão analítica é a última etapa — conclua as atividades pendentes antes de encerrar.</div>`:''}
       <div class="grid-3">
         <div class="card card-pad">
@@ -1205,7 +1213,7 @@ const App={
               <td class="cell-strong">${r.variacao}</td><td>${r.justificativa}</td>
               <td class="cell-sub">${r.responsavel}</td>
               <td><span class="st ${r.status}"><span class="d"></span>${STATUS[r.status].lbl}</span></td>
-              <td style="text-align:right;white-space:nowrap"><button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openRevisao(${i})">✎</button><button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delRevisao(${i})">🗑</button></td></tr>`;}).join('')||'<tr><td colspan=6 class="empty">Nenhuma variação registrada.</td></tr>'}</tbody></table></div>
+              <td style="text-align:right;white-space:nowrap">${ehAdmin()?`<button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openRevisao(${i})">✎</button><button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delRevisao(${i})">🗑</button>`:'<span class="cell-sub">—</span>'}</td></tr>`;}).join('')||'<tr><td colspan=6 class="empty">Nenhuma variação registrada.</td></tr>'}</tbody></table></div>
         </div>
         <div class="card card-pad">
           <div class="sec-title">Checklist da revisão</div>
@@ -1262,7 +1270,7 @@ const App={
      ==================================================================== */
   view_responsaveis(){
     return `<div class="page-head"><div><h1>Responsáveis &amp; áreas</h1><p>${S.responsaveis.length} pessoas cadastradas</p></div>
-      <button class="btn" onclick="App.openResp('new')">+ Novo responsável</button></div>
+      ${ehAdmin()?`<button class="btn ghost" onclick="App.baixarModeloResp()">Baixar planilha modelo</button><button class="btn ghost" onclick="App.importarResp()">Importar planilha</button><button class="btn" onclick="App.openResp('new')">+ Novo responsável</button>`:''}</div>
       <div class="tbl-wrap"><table class="tbl">
         <thead><tr><th>Nome</th><th>Cargo</th><th>Área</th><th>E-mail</th><th>Gestor</th><th>Ativ.</th><th>Pendências</th><th>Atrasos</th><th style="text-align:right">Ações</th></tr></thead>
         <tbody>${S.responsaveis.map((r,i)=>{
@@ -1274,8 +1282,7 @@ const App={
             <td class="mono">${at.length}</td><td class="mono">${pend}</td>
             <td><b class="mono" style="color:${atr?'var(--vermelho)':'inherit'}">${atr}</b></td>
             <td style="text-align:right;white-space:nowrap">
-              <button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openResp(${i})">✎</button>
-              <button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delResp(${i})">🗑</button></td></tr>`;
+              ${ehAdmin()?`<button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openResp(${i})">✎</button><button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delResp(${i})">🗑</button>`:'<span class="cell-sub">—</span>'}</td></tr>`;
         }).join('')}</tbody></table></div>`;
   },
 
@@ -1304,7 +1311,7 @@ const App={
       <div class="card card-pad" style="margin-top:16px">
         <div class="sec-title">Cronograma oficial allu</div>
         <p class="cell-sub" style="margin-bottom:12px">Carrega o cronograma completo de fechamento da allu (${CRONOGRAMA_ALLU.length} atividades) na competência atual, com os prazos por dia útil já preenchidos. Depois é só ajustar responsáveis, contas e áreas. <b>Atenção:</b> substitui as atividades da competência atual.</p>
-        <button class="btn" onclick="App.carregarCronogramaAllu()">Carregar cronograma oficial</button>
+        ${ehAdmin()?`<button class="btn" onclick="App.carregarCronogramaAllu()">Carregar cronograma oficial</button>`:'<span class="cell-sub">Apenas administradores.</span>'}
       </div>
       <div class="card card-pad" style="margin-top:16px">
         <div class="split-head"><div class="sec-title" style="margin:0">Biblioteca de atividades padrão</div>
@@ -1340,9 +1347,10 @@ const App={
       <div class="modal-body">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
           ${stPill(a)} <span class="prio ${a.prioridade}">Prioridade ${a.prioridade}</span>
-          <span style="margin-left:auto;display:flex;gap:8px">
-            <button class="btn ghost sm" onclick="App.renderAtivForm(${a.id});">Editar</button>
-            ${a.status!=='concluido'?`<button class="btn sm" onclick="App.concluir(${a.id})">✓ Marcar como concluído</button>`:''}
+          <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select onchange="App.mudarStatus(${a.id},this.value)" title="Alterar status" style="padding:8px 10px;border:1px solid var(--linha);border-radius:9px;font-size:12.5px;font-weight:600;background:#fff;cursor:pointer">${['nao_iniciado','andamento','aguardando','bloqueado','concluido'].map(s=>`<option value="${s}" ${a.status===s?'selected':''}>${STATUS[s].lbl}</option>`).join('')}</select>
+            ${ehAdmin()?`<button class="btn ghost sm" onclick="App.renderAtivForm(${a.id});">Editar</button>`:''}
+            ${a.status!=='concluido'?`<button class="btn sm" onclick="App.concluir(${a.id})">✓ Concluir</button>`:''}
           </span>
         </div>
         <div class="detail-block"><p>${a.descricao||'Sem descrição.'}</p></div>
@@ -1409,7 +1417,7 @@ const App={
         <button class="btn" onclick="App.saveAtiv(${id||'null'})">Salvar</button>
       </div>`;
   },
-  saveAtiv(id){
+  saveAtiv(id){if(!guardAdmin())return;
     const g=x=>document.getElementById(x);
     const getMulti=x=>[...g(x).selectedOptions].map(o=>o.value);
     const pdu=Number(g('f_prazodu').value)||0;
@@ -1433,7 +1441,7 @@ const App={
     }
     save();this.toast(id?'Atividade atualizada':'Atividade criada');this.closeModal();this.go(currentView);this.refreshNotif();
   },
-  carregarCronogramaAllu(){
+  carregarCronogramaAllu(){if(!guardAdmin())return;
     if(!confirm('Isto vai SUBSTITUIR as atividades da competência atual ('+comp().label+') pelo cronograma oficial da allu ('+CRONOGRAMA_ALLU.length+' atividades), com os prazos já preenchidos.\n\nAs atividades atuais serão removidas. Continuar?'))return;
     const ck=S.competenciaAtiva, alvo=addMonthsKey(ck,1);
     const r0=me()||(S.responsaveis[0]&&S.responsaveis[0].nome)||'', a0=S.areas[0]||'';
@@ -1453,7 +1461,7 @@ const App={
     save();this.go('cronograma');this.toast(CRONOGRAMA_ALLU.length+' atividades carregadas');
   },
   previewPrazoDU(){const du=Number(document.getElementById('f_prazodu').value)||0;const inp=document.getElementById('f_prazo');if(du>0){inp.value=nthDiaUtilComp(S.competenciaAtiva,du);inp.disabled=true;inp.style.opacity=.6;}else{inp.disabled=false;inp.style.opacity=1;}},
-  delAtiv(id){if(!confirm('Excluir esta atividade?'))return;comp().atividades=ativs().filter(a=>a.id!==id);save();this.closeModal();this.go(currentView);this.refreshNotif();this.toast('Atividade excluída');},
+  delAtiv(id){if(!guardAdmin())return;if(!confirm('Excluir esta atividade?'))return;comp().atividades=ativs().filter(a=>a.id!==id);save();this.closeModal();this.go(currentView);this.refreshNotif();this.toast('Atividade excluída');},
   concluir(id){
     const a=ativById(id);
     if(!this.depsOk(a)){if(!confirm('⚠️ Existem dependências não concluídas. Concluir mesmo assim?'))return;}
@@ -1465,6 +1473,15 @@ const App={
     a.historico.push({quem:'Controladoria',acao:'Concluída',de,para:'concluido',data:nowStamp(),obs:''});
     save();this.toast('✓ Atividade concluída');this.renderAtivDetail(a);this.go(currentView);this.refreshNotif();
   },
+  mudarStatus(id,st){
+    const a=ativById(id);if(!a||!st)return;
+    if(st==='concluido')return this.concluir(id);
+    const antigo=a.status;if(st===antigo)return;
+    a.status=st;if(antigo==='concluido')a.dataConclusao='';
+    a.ultimaAtualizacao=nowStamp();
+    a.historico.push({quem:(CLOUD&&SESSAO_EMAIL)?SESSAO_EMAIL:me()||'Controladoria',acao:'Status alterado',de:antigo,para:st,data:nowStamp(),obs:''});
+    save();this.renderAtivDetail(a);this.refreshNotif();this.toast('Status atualizado');
+  },
   addEvid(id,thenConclude){
     const nome=prompt('Nome do arquivo de evidência (ex.: conciliacao_bancaria.xlsx):');if(!nome)return;
     const a=ativById(id);a.evidencias.push({nome,data:nowStamp()});
@@ -1475,7 +1492,7 @@ const App={
   saveObs(id){const a=ativById(id);a.obs=document.getElementById('obsField').value;a.historico.push({quem:'Controladoria',acao:'Observação registrada',de:'',para:'',data:nowStamp(),obs:''});save();this.toast('Observação salva');},
 
   /* ---------- MODAL CONTA ---------- */
-  openConta(cod){
+  openConta(cod){if(!guardAdmin())return;
     const p=cod==='new'?{codigo:'',nome:'',tipo:'analitica',grupo:'',subgrupo:'',natureza:'Devedora',centroResultado:'',areaResponsavel:S.areas[0],responsavelAnalise:S.responsaveis[0].nome,frequencia:'Mensal',materialidade:'media',obs:''}:contaByCod(cod);
     const so=(arr,sel)=>arr.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('');
     document.getElementById('modal').innerHTML=`
@@ -1496,12 +1513,12 @@ const App={
       <button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.saveConta('${cod}')">Salvar</button></div>`;
     this.openModal();
   },
-  saveConta(cod){const g=x=>document.getElementById(x).value;
+  saveConta(cod){if(!guardAdmin())return;const g=x=>document.getElementById(x).value;
     const nova={codigo:g('c_cod'),nome:g('c_nome'),tipo:g('c_tipo'),grupo:g('c_grupo'),subgrupo:g('c_sub'),natureza:g('c_nat'),centroResultado:'',areaResponsavel:g('c_area'),responsavelAnalise:g('c_resp'),frequencia:'Mensal',materialidade:g('c_mat'),obs:g('c_obs')};
     if(cod==='new')S.planoContas.push(nova);else{const i=S.planoContas.findIndex(p=>p.codigo===cod);S.planoContas[i]=nova;}
     save();this.closeModal();this.go(currentView);this.toast('Conta salva');},
-  delConta(cod){if(!confirm('Excluir conta?'))return;S.planoContas=S.planoContas.filter(p=>p.codigo!==cod);save();this.closeModal();this.go(currentView);},
-  importPlano(){
+  delConta(cod){if(!guardAdmin())return;if(!confirm('Excluir conta?'))return;S.planoContas=S.planoContas.filter(p=>p.codigo!==cod);save();this.closeModal();this.go(currentView);},
+  importPlano(){if(!guardAdmin())return;
     document.getElementById('modal').innerHTML=`
       <div class="modal-head"><div><h2>Importar plano de contas</h2><div class="mh-sub">Colar do Excel / SAP</div></div><button class="modal-x" onclick="App.closeModal()">✕</button></div>
       <div class="modal-body">
@@ -1512,7 +1529,7 @@ const App={
       <div class="modal-foot"><button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.salvarImportPlano()">Importar</button></div>`;
     this.openModal();
   },
-  salvarImportPlano(){
+  salvarImportPlano(){if(!guardAdmin())return;
     const txt=document.getElementById('imp_txt').value||'';
     const sub=document.getElementById('imp_sub').checked;
     const linhas=txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
@@ -1529,31 +1546,78 @@ const App={
     else{const map={};S.planoContas.forEach(p=>map[p.codigo]=p);novas.forEach(n=>map[n.codigo]=n);S.planoContas=Object.values(map);}
     save();this.closeModal();this.go('plano');this.toast(novas.length+' conta(s) importada(s)');
   },
-  limparPlano(){
+  limparPlano(){if(!guardAdmin())return;
     if(!confirm('Apagar TODAS as contas do plano de contas?\n\nIsso não apaga as atividades, mas remove os vínculos de conta. Você poderá importar um plano novo em seguida.'))return;
     S.planoContas=[];save();this.go('plano');this.toast('Plano de contas apagado');
   },
 
   /* ---------- MODAL RESPONSÁVEL ---------- */
   openResp(i){
-    const r=i==='new'?{nome:'',cargo:'',area:S.areas[0],email:'',gestor:''}:S.responsaveis[i];
+    const r=i==='new'?{nome:'',cargo:'',area:S.areas[0],email:'',gestor:'',admin:false}:S.responsaveis[i];
     const so=(arr,sel)=>arr.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('');
     document.getElementById('modal').innerHTML=`<div class="modal-head"><div><h2>${i==='new'?'Novo responsável':r.nome}</h2><div class="mh-sub">Cadastro</div></div><button class="modal-x" onclick="App.closeModal()">✕</button></div>
       <div class="modal-body">
         <div class="field"><label>Nome</label><input id="r_nome" value="${r.nome}"></div>
         <div class="field-row"><div class="field"><label>Cargo</label><input id="r_cargo" value="${r.cargo}"></div>
         <div class="field"><label>Área</label><select id="r_area">${so(S.areas,r.area)}</select></div></div>
-        <div class="field-row"><div class="field"><label>E-mail</label><input id="r_email" value="${r.email}"></div>
+        <div class="field-row"><div class="field"><label>E-mail (usado no login)</label><input id="r_email" value="${r.email}" placeholder="nome@allugator.com"></div>
         <div class="field"><label>Gestor</label><input id="r_gestor" value="${r.gestor}"></div></div>
+        <div class="field"><label>Administrador?</label><select id="r_admin"><option value="1" ${r.admin?'selected':''}>Sim — pode editar o cronograma</option><option value="0" ${!r.admin?'selected':''}>Não — só muda status e anexa evidência</option></select></div>
       </div>
       <div class="modal-foot">${i!=='new'?`<button class="btn ghost" style="margin-right:auto;color:var(--vermelho)" onclick="App.delResp(${i})">Excluir</button>`:''}
       <button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.saveResp(${i==='new'?"'new'":i})">Salvar</button></div>`;
     this.openModal();
   },
-  saveResp(i){const g=x=>document.getElementById(x).value;const r={nome:g('r_nome'),cargo:g('r_cargo'),area:g('r_area'),email:g('r_email'),gestor:g('r_gestor')};
-    if(i==='new')S.responsaveis.push(r);else S.responsaveis[i]=r;save();this.renderUserSelect();this.closeModal();this.go(currentView);this.toast('Responsável salvo');},
+  saveResp(i){if(!guardAdmin())return;const g=x=>document.getElementById(x).value;const r={nome:g('r_nome'),cargo:g('r_cargo'),area:g('r_area'),email:g('r_email'),gestor:g('r_gestor'),admin:g('r_admin')==='1'};
+    if(i==='new')S.responsaveis.push(r);else S.responsaveis[i]=r;save();this.renderUserSelect();this.closeModal();this.go(currentView);this.toast('Responsável salvo');const admins=S.responsaveis.filter(x=>x.admin&&x.email);if(CLOUD&&admins.length&&!admins.some(x=>(x.email||'').toLowerCase()===(SESSAO_EMAIL||'').toLowerCase()))setTimeout(()=>alert('Atenção: seu e-mail ('+SESSAO_EMAIL+') não está marcado como Administrador. Se sair agora, você perderá o acesso de edição. Marque o SEU responsável como Administrador.'),300);},
+  baixarModeloResp(){
+    const linhas=[['Nome','Cargo','Área','E-mail','Gestor','Administrador (Sim/Não)'],
+      ['Thayane Marques','Coord. Controladoria','Controladoria','thayane.rocha@allugator.com','Isa','Sim'],
+      ['Marianna Duarte','Analista Contábil','Contábil','marianna@allugator.com','Thayane','Não']];
+    const csv='\ufeff'+linhas.map(l=>l.map(c=>/[;\n",]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c).join(';')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='modelo_responsaveis_allu.csv';a.click();URL.revokeObjectURL(url);
+    this.toast('Planilha modelo baixada');
+  },
+  importarResp(){
+    if(!guardAdmin())return;
+    const inp=document.createElement('input');inp.type='file';inp.accept='.csv,.xlsx,.xls';
+    inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const nome=file.name.toLowerCase();
+      if(nome.endsWith('.csv')){const rd=new FileReader();rd.onload=()=>this._processarResp(this._parseCSV(rd.result));rd.readAsText(file,'utf-8');}
+      else{const proc=()=>{const rd=new FileReader();rd.onload=()=>{try{const wb=window.XLSX.read(new Uint8Array(rd.result),{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];this._processarResp(window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''}));}catch(err){this.toast('Erro ao ler a planilha: '+err.message);}};rd.readAsArrayBuffer(file);};
+        if(window.XLSX)proc();else{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=proc;sc.onerror=()=>this.toast('Não consegui carregar o leitor de Excel (rede). Salve como CSV e importe de novo.');document.head.appendChild(sc);}}
+    };
+    inp.click();
+  },
+  _parseCSV(text){
+    const linhas=text.replace(/\r/g,'').split('\n').filter(l=>l.trim().length);
+    if(!linhas.length)return [];
+    const sep=(linhas[0].match(/;/g)||[]).length>=(linhas[0].match(/,/g)||[]).length?';':',';
+    return linhas.map(l=>{const out=[];let cur='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];if(q){if(ch==='"'){if(l[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}else{if(ch==='"')q=true;else if(ch===sep){out.push(cur);cur='';}else cur+=ch;}}out.push(cur);return out.map(x=>(x||'').trim());});
+  },
+  _processarResp(rows){
+    if(!guardAdmin())return;
+    if(!rows||!rows.length){this.toast('Planilha vazia.');return;}
+    let hi=rows.findIndex(r=>r.some(c=>/nome/i.test(c))&&r.some(c=>/mail/i.test(c)));if(hi<0)hi=0;
+    const head=rows[hi].map(c=>(c||'').toString().toLowerCase());
+    const col=(...keys)=>{for(const k of keys){const idx=head.findIndex(h=>h.includes(k));if(idx>=0)return idx;}return -1;};
+    const cN=col('nome'),cC=col('cargo'),cA=col('área','area'),cE=col('mail'),cG=col('gestor'),cAd=col('admin');
+    let add=0;
+    for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r)continue;
+      const nome=(cN>=0?r[cN]:'').toString().trim();const email=(cE>=0?r[cE]:'').toString().trim();
+      if(!nome&&!email)continue;
+      const area=(cA>=0?r[cA]:'').toString().trim();
+      const admin=/^(sim|s|yes|y|1|true|verdadeiro|x)$/i.test(((cAd>=0?r[cAd]:'')||'').toString().trim());
+      const resp={nome:nome||email,cargo:(cC>=0?r[cC]:'').toString().trim(),area:area||S.areas[0],email:email,gestor:(cG>=0?r[cG]:'').toString().trim(),admin:admin};
+      if(area&&!S.areas.includes(area))S.areas.push(area);
+      const ix=S.responsaveis.findIndex(x=>(email&&(x.email||'').toLowerCase()===email.toLowerCase())||(!email&&x.nome===resp.nome));
+      if(ix>=0)S.responsaveis[ix]=resp;else S.responsaveis.push(resp);add++;
+    }
+    save();this.renderUserSelect();this.go('responsaveis');this.toast(add+' responsável(is) importado(s)');
+    if(CLOUD){const admins=S.responsaveis.filter(x=>x.admin&&x.email);if(admins.length&&!admins.some(x=>(x.email||'').toLowerCase()===(SESSAO_EMAIL||'').toLowerCase()))setTimeout(()=>alert('Atenção: seu e-mail ('+SESSAO_EMAIL+') não está como Administrador na lista. Ao recarregar, você perderá o acesso de edição. Inclua seu e-mail com Administrador = Sim.'),300);}
+  },
   delResp(i){
-    const r=S.responsaveis[i];if(!r)return;
+if(!guardAdmin())return;    const r=S.responsaveis[i];if(!r)return;
     let vinc=0;Object.values(S.competencias).forEach(c=>(c.atividades||[]).forEach(a=>{if([...toArr(a.responsavelExec),...toArr(a.responsavelEnvio),a.aprovador].includes(r.nome))vinc++;}));
     const msg=vinc?`${r.nome} está vinculado(a) a ${vinc} atividade(s) em uma ou mais competências.\nAs atividades continuarão com o nome registrado, mas ele(a) deixará de aparecer nas listas de seleção.\n\nExcluir mesmo assim?`:`Excluir ${r.nome}?`;
     if(!confirm(msg))return;
@@ -1562,7 +1626,7 @@ const App={
     save();this.renderUserSelect();this.closeModal();this.go(currentView);this.toast('Responsável excluído');},
 
   /* ---------- REVISÃO / BANCO ---------- */
-  openRevisao(i){
+  openRevisao(i){if(!guardAdmin())return;
     const rev=S.revisaoAnalitica[S.competenciaAtiva]||[];
     const r=i==='new'?{conta:'',variacao:'',justificativa:'',responsavel:me(),status:'nao_iniciado'}:rev[i];
     const so=(arr,sel)=>arr.map(v=>`<option ${v===sel?'selected':''}>${v}</option>`).join('');
@@ -1581,7 +1645,7 @@ const App={
       <button class="btn ghost" onclick="App.closeModal()">Cancelar</button><button class="btn" onclick="App.saveRevisao(${i==='new'?"'new'":i})">Salvar</button></div>`;
     this.openModal();
   },
-  saveRevisao(i){
+  saveRevisao(i){if(!guardAdmin())return;
     const g=x=>document.getElementById(x).value;
     const item={conta:g('rv_conta'),variacao:g('rv_var')||'—',justificativa:g('rv_just'),responsavel:g('rv_resp'),status:g('rv_status')};
     if(!item.conta){alert('Selecione uma conta.');return;}
@@ -1589,16 +1653,16 @@ const App={
     if(i==='new')arr.push(item);else arr[i]=item;
     save();this.closeModal();this.go('revisao');this.toast('Variação salva');
   },
-  delRevisao(i){
+  delRevisao(i){if(!guardAdmin())return;
     if(!confirm('Excluir esta variação?'))return;
     (S.revisaoAnalitica[S.competenciaAtiva]||[]).splice(i,1);
     save();this.closeModal();this.go('revisao');this.toast('Variação excluída');
   },
-  addBanco(){const n=prompt('Nome da atividade padrão:');if(!n)return;S.bancoAtividades.push(n);save();this.go('config');},
-  rmBanco(i){S.bancoAtividades.splice(i,1);save();this.go('config');},
+  addBanco(){if(!guardAdmin())return;const n=prompt('Nome da atividade padrão:');if(!n)return;S.bancoAtividades.push(n);save();this.go('config');},
+  rmBanco(i){if(!guardAdmin())return;S.bancoAtividades.splice(i,1);save();this.go('config');},
 
   /* ---------- NOVO FECHAMENTO / DUPLICAR ---------- */
-  duplicarFechamento(){
+  duplicarFechamento(){if(!guardAdmin())return;
     const target=document.getElementById('dupComp').value;
     if(S.competencias[target]&&!confirm(`${compLabel(target)} já existe. Sobrescrever?`))return;
     const src=comp();const shift=(parse(target+'-01').getFullYear()-parse(S.competenciaAtiva+'-01').getFullYear())*12+(parse(target+'-01').getMonth()-parse(S.competenciaAtiva+'-01').getMonth());
@@ -1609,7 +1673,7 @@ const App={
     S.competencias[target]=nova;S.competenciaAtiva=target;save();this.renderCompSelect();document.getElementById('compSelect').value=target;this.renderNav();this.go('home');this.refreshNotif();this.toast('Fechamento '+nova.label+' criado');
   },
   shiftDate(s,months){const d=parse(s);d.setMonth(d.getMonth()+months);return iso(d);},
-  encerrarFechamento(){const k=this.kpis();if(k.pct<100&&!confirm(`Fechamento está em ${k.pct}%. Encerrar mesmo assim?`))return;comp().encerrado=true;save();this.go('config');this.toast('Fechamento encerrado');},
+  encerrarFechamento(){if(!guardAdmin())return;const k=this.kpis();if(k.pct<100&&!confirm(`Fechamento está em ${k.pct}%. Encerrar mesmo assim?`))return;comp().encerrado=true;save();this.go('config');this.toast('Fechamento encerrado');},
 
   /* ====================================================================
      NOTIFICAÇÕES
