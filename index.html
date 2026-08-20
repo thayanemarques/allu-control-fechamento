@@ -1309,8 +1309,30 @@ const App={
             <td><b class="mono" style="color:${atr?'var(--vermelho)':'inherit'}">${atr}</b></td>
             <td style="text-align:right;white-space:nowrap">
               ${ehAdmin()?`<button class="btn-icon" title="Editar" onclick="event.stopPropagation();App.openResp(${i})">✎</button><button class="btn-icon danger" title="Excluir" onclick="event.stopPropagation();App.delResp(${i})">🗑</button>`:'<span class="cell-sub">—</span>'}</td></tr>`;
-        }).join('')}</tbody></table></div>`;
+        }).join('')}</tbody></table></div>
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="split-head"><div class="sec-title" style="margin:0">Áreas</div>
+          ${ehAdmin()?`<button class="btn ghost sm" onclick="App.novaArea()">+ Nova área</button>`:''}</div>
+        <div class="tags" style="margin-top:12px">
+          ${S.areas.map((ar,i)=>{const uso=ativs().filter(a=>a.areaResponsavel===ar||a.areaFornecedora===ar).length;
+            return `<span class="tag" style="font-family:'DM Sans';display:inline-flex;align-items:center;gap:7px">${ar} <span class="cell-sub" style="font-size:10.5px">(${uso})</span>${ehAdmin()?`<span style="cursor:pointer" title="Renomear" onclick="App.renomearArea(${i})">✎</span><span style="cursor:pointer;color:var(--txt-3)" title="Excluir" onclick="App.delArea(${i})">✕</span>`:''}</span>`;}).join('')}
+        </div>
+        <p class="cell-sub" style="margin-top:10px">O número entre parênteses é quantas atividades usam a área. Renomear atualiza automaticamente todas as atividades e pessoas.</p>
+      </div>`;
   },
+  novaArea(){if(!guardAdmin())return;const n=(prompt('Nome da nova área:')||'').trim();if(!n)return;if(S.areas.includes(n)){this.toast('Essa área já existe');return;}S.areas.push(n);save();this.go('responsaveis');this.toast('Área criada');},
+  renomearArea(i){if(!guardAdmin())return;const antigo=S.areas[i];const novo=(prompt('Novo nome para a área "'+antigo+'":',antigo)||'').trim();if(!novo||novo===antigo)return;if(S.areas.includes(novo)){this.toast('Já existe uma área com esse nome');return;}
+    S.areas[i]=novo;
+    Object.values(S.competencias).forEach(c=>(c.atividades||[]).forEach(a=>{if(a.areaResponsavel===antigo)a.areaResponsavel=novo;if(a.areaFornecedora===antigo)a.areaFornecedora=novo;}));
+    S.responsaveis.forEach(r=>{if(r.area===antigo)r.area=novo;});
+    save();this.go('responsaveis');this.toast('Área renomeada em todo o sistema');},
+  delArea(i){if(!guardAdmin())return;const ar=S.areas[i];
+    let uso=0;Object.values(S.competencias).forEach(c=>(c.atividades||[]).forEach(a=>{if(a.areaResponsavel===ar||a.areaFornecedora===ar)uso++;}));
+    const pessoas=S.responsaveis.filter(r=>r.area===ar).length;
+    let msg='Excluir a área "'+ar+'"?';
+    if(uso||pessoas)msg='A área "'+ar+'" está em uso em '+uso+' atividade(s) e '+pessoas+' pessoa(s).\nElas mantêm o nome registrado, mas a área sai da lista de seleção.\n\nExcluir mesmo assim?';
+    if(!confirm(msg))return;
+    S.areas.splice(i,1);save();this.go('responsaveis');this.toast('Área excluída');},
 
   /* ====================================================================
      CONFIGURAÇÕES
