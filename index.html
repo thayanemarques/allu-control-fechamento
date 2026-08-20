@@ -1003,7 +1003,7 @@ const App={
       <div style="display:flex;gap:8px">
         <button class="btn ghost" onclick="App.exportExcel()">Excel</button>
         <button class="btn ghost" onclick="App.exportPDF()">PDF</button>
-        ${ehAdmin()?`<button class="btn" onclick="App.openAtiv('new')">+ Nova atividade</button>`:''}
+        ${ehAdmin()?`<button class="btn ghost" onclick="App.importarCronograma()">Importar Excel</button><button class="btn" onclick="App.openAtiv('new')">+ Nova atividade</button>`:''}
       </div></div>
 
       <div class="filters">
@@ -1663,6 +1663,63 @@ const App={
     }
     save();this.renderUserSelect();this.go('responsaveis');this.toast(add+' responsável(is) importado(s)');
     if(CLOUD){const admins=S.responsaveis.filter(x=>x.admin&&x.email);if(admins.length&&!admins.some(x=>(x.email||'').toLowerCase()===(SESSAO_EMAIL||'').toLowerCase()))setTimeout(()=>alert('Atenção: seu e-mail ('+SESSAO_EMAIL+') não está como Administrador na lista. Ao recarregar, você perderá o acesso de edição. Inclua seu e-mail com Administrador = Sim.'),300);}
+  },
+  /* ---------- IMPORTAR CRONOGRAMA (Excel) ---------- */
+  importarCronograma(){
+    if(!guardAdmin())return;
+    const inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls,.csv';
+    inp.onchange=e=>{const file=e.target.files[0];if(!file)return;const nome=file.name.toLowerCase();
+      if(nome.endsWith('.csv')){const rd=new FileReader();rd.onload=()=>this._processarCronograma(this._parseCSV(rd.result));rd.readAsText(file,'utf-8');}
+      else{const proc=()=>{const rd=new FileReader();rd.onload=()=>{try{const wb=window.XLSX.read(new Uint8Array(rd.result),{type:'array'});const nm=wb.SheetNames.find(n=>/cronograma/i.test(n))||wb.SheetNames[0];const ws=wb.Sheets[nm];this._processarCronograma(window.XLSX.utils.sheet_to_json(ws,{header:1,defval:''}));}catch(err){this.toast('Erro ao ler a planilha: '+err.message);}};rd.readAsArrayBuffer(file);};
+        if(window.XLSX)proc();else{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';sc.onload=proc;sc.onerror=()=>this.toast('Não consegui carregar o leitor de Excel (rede). Salve como CSV e importe de novo.');document.head.appendChild(sc);}}
+    };
+    inp.click();
+  },
+  _nomesLista(v){return (''+(v||'')).split(/[,;]/).map(x=>x.trim()).filter(Boolean);},
+  _parseData(v){
+    if(v==null||v==='')return '';
+    if(v instanceof Date)return iso(v);
+    if(typeof v==='number'){return iso(new Date(Date.UTC(1899,11,30)+v*86400000));}
+    const s=(''+v).trim();
+    let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return m[1]+'-'+m[2]+'-'+m[3];
+    m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+    return '';
+  },
+  _processarCronograma(rows){
+    if(!guardAdmin())return;
+    if(!rows||!rows.length){this.toast('Planilha vazia.');return;}
+    let hi=rows.findIndex(r=>r.some(c=>/atividade/i.test(c))&&r.some(c=>/prazo/i.test(c)));if(hi<0)hi=0;
+    const head=rows[hi].map(c=>(c||'').toString().toLowerCase());
+    const col=(...keys)=>{for(const k of keys){const idx=head.findIndex(h=>h.includes(k));if(idx>=0)return idx;}return -1;};
+    const cAtiv=col('atividade'),cEtapa=col('etapa'),cDesc=col('descri'),cIni=col('início','inicio'),cPz=col('prazo'),
+          cResp=col('responsá','responsa'),cAr=col('área resp','area resp'),cArF=col('área forn','area forn'),
+          cEnv=col('envio'),cPrio=col('prioridade'),cContas=col('conta'),cStatus=col('status');
+    const stKey={};Object.keys(STATUS).forEach(k=>stKey[STATUS[k].lbl.toLowerCase()]=k);
+    const lista=[];
+    for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r)continue;
+      const ativ=(cAtiv>=0?r[cAtiv]:'').toString().trim();if(!ativ)continue;
+      const exec=this._nomesLista(cResp>=0?r[cResp]:'');
+      const env=this._nomesLista(cEnv>=0?r[cEnv]:'');
+      const arR=(cAr>=0?r[cAr]:'').toString().trim(),arF=(cArF>=0?r[cArF]:'').toString().trim();
+      [arR,arF].forEach(x=>{if(x&&!S.areas.includes(x))S.areas.push(x);});
+      const prioTxt=((cPrio>=0?r[cPrio]:'')||'').toString().toLowerCase();
+      const prio=/alta/.test(prioTxt)?'alta':/baix/.test(prioTxt)?'baixa':'media';
+      let st=stKey[((cStatus>=0?r[cStatus]:'')||'').toString().toLowerCase().trim()]||'nao_iniciado';if(st==='atrasado')st='nao_iniciado';
+      const contas=(cContas>=0?r[cContas]:'').toString().split(/[,;]/).map(x=>x.trim()).filter(Boolean);
+      const ini=this._parseData(cIni>=0?r[cIni]:'')||nthDiaUtilComp(S.competenciaAtiva,1);
+      const pz=this._parseData(cPz>=0?r[cPz]:'')||ini;
+      const r0=exec[0]||me()||'';
+      lista.push({id:lista.length+1,etapa:(cEtapa>=0?r[cEtapa]:'').toString().trim()||'Geral',atividade:ativ,
+        descricao:(cDesc>=0?r[cDesc]:'').toString().trim(),dataInicio:ini,prazo:pz,prazoDiaUtil:0,
+        responsavelExec:exec.length?exec:[r0],areaResponsavel:arR||S.areas[0],areaFornecedora:arF||arR||S.areas[0],
+        responsavelEnvio:env.length?env:(exec.length?exec:[r0]),aprovador:r0,status:st,prioridade:prio,
+        dependencias:[],contas:contas,centroCusto:'',obs:'',evidencias:[],dataConclusao:st==='concluido'?nowStamp():'',
+        ultimaAtualizacao:nowStamp(),evidObrig:false,raci:{R:nomes(exec),A:r0,C:nomes(env),I:'Isa Rocha'},
+        lembretes:['D-2','D-1','D0'],historico:[{quem:'Sistema',acao:'Importado via Excel',de:'',para:st,data:nowStamp(),obs:''}]});
+    }
+    if(!lista.length){this.toast('Nenhuma atividade encontrada na aba do cronograma.');return;}
+    if(!confirm('Importar '+lista.length+' atividade(s) do Excel para a competência atual ('+comp().label+')?\n\nIsto SUBSTITUI as atividades atuais desta competência.'))return;
+    comp().atividades=lista;save();this.renderUserSelect&&this.renderUserSelect();this.go('cronograma');this.toast(lista.length+' atividades importadas');
   },
   delResp(i){
 if(!guardAdmin())return;    const r=S.responsaveis[i];if(!r)return;
