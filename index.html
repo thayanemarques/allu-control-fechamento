@@ -95,6 +95,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--txt)}
 .btn-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:var(--off);border:1px solid var(--linha);color:var(--txt);font-size:14px;margin-left:5px;transition:.12s;vertical-align:middle}
 .btn-icon:hover{background:#fff;border-color:var(--verde);color:var(--verde-d)}
 .btn-icon.danger:hover{border-color:var(--vermelho);color:var(--vermelho);background:#fff}
+.tbl th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.tbl th.sortable:hover{color:var(--verde-d)}
 .login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% -10%,rgba(39,174,96,.12),transparent),var(--off);padding:20px}
 .login-card{width:100%;max-width:380px;background:#fff;border:1px solid var(--linha);border-radius:20px;padding:34px 30px;box-shadow:0 20px 60px rgba(46,47,57,.12);text-align:center}
 .login-logo{width:52px;height:52px;border-radius:14px;background:var(--verde);color:#fff;font-weight:800;font-size:26px;display:grid;place-items:center;margin:0 auto 16px}
@@ -723,6 +725,7 @@ const PERFIL_AV={admin:'CT',responsavel:'RS',gestor:'GS',diretoria:'DR'};
 
 let currentView='home';
 let cronoFilters={area:'',resp:'',status:'',prio:'',etapa:'',atrasadas:false,q:''};
+let cronoSort={by:'prazo',dir:'asc'};
 
 const App={
   init(){
@@ -992,7 +995,8 @@ const App={
   },
   view_cronograma(){
     const f=cronoFilters;const etapas=[...new Set(ativs().map(a=>a.etapa))];
-    const rows=this.filteredAtivs().sort((a,b)=>a.prazo.localeCompare(b.prazo));
+    const rows=this.sortAtivs(this.filteredAtivs());
+    const S_ORT=cronoSort;const seta=k=>S_ORT.by===k?(S_ORT.dir==='asc'?' ▲':' ▼'):'';
     const opt=(arr,sel)=>arr.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`).join('');
     return `
       <div class="page-head"><div><h1>Cronograma de fechamento</h1><p>${rows.length} atividade(s) · ${comp().label}</p></div>
@@ -1009,12 +1013,14 @@ const App={
         <select onchange="App.setFilter('status',this.value)"><option value="">Status</option>${Object.keys(STATUS).map(s=>`<option value="${s}" ${s===f.status?'selected':''}>${STATUS[s].lbl}</option>`).join('')}</select>
         <select onchange="App.setFilter('prio',this.value)"><option value="">Prioridade</option>${opt(['alta','media','baixa'],f.prio)}</select>
         <button class="chip ${f.atrasadas?'on':''}" onclick="App.setFilter('atrasadas',${!f.atrasadas})">🔴 Somente atrasadas</button>
+        <select onchange="App.setSortBy(this.value)" title="Ordenar por">${[['prazo','Prazo'],['prio','Prioridade'],['diautil','Dia útil'],['status','Status'],['etapa','Etapa'],['resp','Responsável']].map(o=>`<option value="${o[0]}" ${cronoSort.by===o[0]?'selected':''}>Ordenar: ${o[1]}</option>`).join('')}</select>
+        <button class="chip" onclick="App.toggleSortDir()">${cronoSort.dir==='asc'?'↑ crescente':'↓ decrescente'}</button>
         ${(f.area||f.resp||f.status||f.prio||f.etapa||f.atrasadas||f.q)?`<button class="chip" onclick="App.clearFilters()">✕ Limpar</button>`:''}
       </div>
 
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>ID</th><th>Etapa</th><th>Atividade</th><th>Responsável</th><th>Área forn.</th><th>Início</th><th>Prazo</th><th>Prio</th><th>Contas</th><th>Status</th></tr></thead>
+          <thead><tr><th class="sortable" onclick="App.setSortBy('id')">ID${seta('id')}</th><th class="sortable" onclick="App.setSortBy('etapa')">Etapa${seta('etapa')}</th><th class="sortable" onclick="App.setSortBy('atividade')">Atividade${seta('atividade')}</th><th class="sortable" onclick="App.setSortBy('resp')">Responsável${seta('resp')}</th><th>Área forn.</th><th class="sortable" onclick="App.setSortBy('dataInicio')">Início${seta('dataInicio')}</th><th class="sortable" onclick="App.setSortBy('prazo')">Prazo${seta('prazo')}</th><th class="sortable" onclick="App.setSortBy('prio')">Prio${seta('prio')}</th><th>Contas</th><th class="sortable" onclick="App.setSortBy('status')">Status${seta('status')}</th></tr></thead>
           <tbody>${rows.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
             <td class="mono cell-sub">#${String(a.id).padStart(2,'0')}</td>
             <td><span class="cell-sub">${a.etapa}</span></td>
@@ -1031,6 +1037,26 @@ const App={
   },
   setFilter(k,v){cronoFilters[k]=v;this.go('cronograma');},
   clearFilters(){cronoFilters={area:'',resp:'',status:'',prio:'',etapa:'',atrasadas:false,q:''};document.getElementById('globalSearch').value='';this.go('cronograma');},
+  setSortBy(k){if(cronoSort.by===k){cronoSort.dir=cronoSort.dir==='asc'?'desc':'asc';}else{cronoSort.by=k;cronoSort.dir='asc';}this.go('cronograma');},
+  toggleSortDir(){cronoSort.dir=cronoSort.dir==='asc'?'desc':'asc';this.go('cronograma');},
+  sortAtivs(rows){
+    const by=cronoSort.by, dir=cronoSort.dir==='desc'?-1:1;
+    const prioO={alta:0,media:1,baixa:2}, stO={atrasado:0,bloqueado:1,andamento:2,aguardando:3,nao_iniciado:4,concluido:5};
+    const val=a=>{switch(by){
+      case 'prio':return prioO[a.prioridade]!=null?prioO[a.prioridade]:9;
+      case 'diautil':return a.prazoDiaUtil||99;
+      case 'status':return stO[effStatus(a)]!=null?stO[effStatus(a)]:9;
+      case 'etapa':return a.etapa||'';
+      case 'resp':return nomes(a.responsavelExec);
+      case 'atividade':return a.atividade||'';
+      case 'dataInicio':return a.dataInicio||'';
+      case 'id':return a.id;
+      default:return a.prazo||'';}};
+    return rows.slice().sort((a,b)=>{const va=val(a),vb=val(b);
+      let c=(typeof va==='number'&&typeof vb==='number')?va-vb:(''+va).localeCompare(''+vb,'pt-BR');
+      if(c===0)c=(a.prazo||'').localeCompare(b.prazo||'');
+      return c*dir;});
+  },
 
   /* ====================================================================
      GANTT
