@@ -910,7 +910,7 @@ const App={
         </div>
       </div>`;
   },
-  prazoTag(a){const t=today();if(a.prazo<t)return `<span style="color:var(--vermelho)">${fmt(a.prazo)}</span>`;if(a.prazo===t)return `<span style="color:var(--amarelo)">Hoje</span>`;if(a.prazo===addDays(t,1))return `<span style="color:var(--azul)">Amanhã</span>`;return fmt(a.prazo);},
+  prazoTag(a){const t=today();const dc=a.prazo<t?`<span style="color:var(--vermelho)">${fmt(a.prazo)}</span>`:a.prazo===t?`<span style="color:var(--amarelo)">${fmt(a.prazo)} · hoje</span>`:a.prazo===addDays(t,1)?`<span style="color:var(--azul)">${fmt(a.prazo)} · amanhã</span>`:fmt(a.prazo);return a.prazoDiaUtil?`<b>${a.prazoDiaUtil}º dia útil</b><div class="cell-sub" style="font-weight:400">${dc}</div>`:dc;},
 
   /* ====================================================================
      DASHBOARD EXECUTIVO
@@ -1020,14 +1020,13 @@ const App={
 
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th class="sortable" onclick="App.setSortBy('id')">ID${seta('id')}</th><th class="sortable" onclick="App.setSortBy('etapa')">Etapa${seta('etapa')}</th><th class="sortable" onclick="App.setSortBy('atividade')">Atividade${seta('atividade')}</th><th class="sortable" onclick="App.setSortBy('resp')">Responsável${seta('resp')}</th><th>Área forn.</th><th class="sortable" onclick="App.setSortBy('dataInicio')">Início${seta('dataInicio')}</th><th class="sortable" onclick="App.setSortBy('prazo')">Prazo${seta('prazo')}</th><th class="sortable" onclick="App.setSortBy('prio')">Prio${seta('prio')}</th><th>Contas</th><th class="sortable" onclick="App.setSortBy('status')">Status${seta('status')}</th></tr></thead>
+          <thead><tr><th class="sortable" onclick="App.setSortBy('id')">ID${seta('id')}</th><th class="sortable" onclick="App.setSortBy('etapa')">Etapa${seta('etapa')}</th><th class="sortable" onclick="App.setSortBy('atividade')">Atividade${seta('atividade')}</th><th class="sortable" onclick="App.setSortBy('resp')">Responsável${seta('resp')}</th><th>Área forn.</th><th class="sortable" onclick="App.setSortBy('prazo')">Prazo${seta('prazo')}</th><th class="sortable" onclick="App.setSortBy('prio')">Prio${seta('prio')}</th><th>Contas</th><th class="sortable" onclick="App.setSortBy('status')">Status${seta('status')}</th></tr></thead>
           <tbody>${rows.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
             <td class="mono cell-sub">#${String(a.id).padStart(2,'0')}</td>
             <td><span class="cell-sub">${a.etapa}</span></td>
             <td class="cell-strong">${a.atividade}${a.dependencias.length?' <span class="cell-sub">⛓</span>':''}</td>
             <td>${nomes(a.responsavelExec)}</td>
             <td class="cell-sub">${a.areaFornecedora}</td>
-            <td class="cell-sub">${fmt(a.dataInicio)}</td>
             <td class="cell-strong">${this.prazoTag(a)}</td>
             <td><span class="prio ${a.prioridade}">${a.prioridade}</span></td>
             <td>${a.contas.length?`<span class="tag">${a.contas[0]}${a.contas.length>1?' +'+(a.contas.length-1):''}</span>`:'<span class="cell-sub">—</span>'}</td>
