@@ -1693,7 +1693,7 @@ const App={
     const col=(...keys)=>{for(const k of keys){const idx=head.findIndex(h=>h.includes(k));if(idx>=0)return idx;}return -1;};
     const cAtiv=col('atividade'),cEtapa=col('etapa'),cDesc=col('descri'),cIni=col('início','inicio'),cPz=col('prazo'),
           cResp=col('responsá','responsa'),cAr=col('área resp','area resp'),cArF=col('área forn','area forn'),
-          cEnv=col('envio'),cPrio=col('prioridade'),cContas=col('conta'),cStatus=col('status');
+          cEnv=col('envio'),cPrio=col('prioridade'),cContas=col('conta'),cStatus=col('status'),cDU=col('dia útil','dia util','diautil');
     const stKey={};Object.keys(STATUS).forEach(k=>stKey[STATUS[k].lbl.toLowerCase()]=k);
     const lista=[];
     for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r)continue;
@@ -1707,10 +1707,12 @@ const App={
       let st=stKey[((cStatus>=0?r[cStatus]:'')||'').toString().toLowerCase().trim()]||'nao_iniciado';if(st==='atrasado')st='nao_iniciado';
       const contas=(cContas>=0?r[cContas]:'').toString().split(/[,;]/).map(x=>x.trim()).filter(Boolean);
       const ini=this._parseData(cIni>=0?r[cIni]:'')||nthDiaUtilComp(S.competenciaAtiva,1);
-      const pz=this._parseData(cPz>=0?r[cPz]:'')||ini;
+      const duNum=parseInt(((cDU>=0?r[cDU]:'')||'').toString().replace(/\D/g,''),10);
+      const pdu=(duNum>=1&&duNum<=31)?duNum:0;
+      const pz=pdu?nthDiaUtilComp(S.competenciaAtiva,pdu):(this._parseData(cPz>=0?r[cPz]:'')||ini);
       const r0=exec[0]||me()||'';
       lista.push({id:lista.length+1,etapa:(cEtapa>=0?r[cEtapa]:'').toString().trim()||'Geral',atividade:ativ,
-        descricao:(cDesc>=0?r[cDesc]:'').toString().trim(),dataInicio:ini,prazo:pz,prazoDiaUtil:0,
+        descricao:(cDesc>=0?r[cDesc]:'').toString().trim(),dataInicio:ini,prazo:pz,prazoDiaUtil:pdu,
         responsavelExec:exec.length?exec:[r0],areaResponsavel:arR||S.areas[0],areaFornecedora:arF||arR||S.areas[0],
         responsavelEnvio:env.length?env:(exec.length?exec:[r0]),aprovador:r0,status:st,prioridade:prio,
         dependencias:[],contas:contas,centroCusto:'',obs:'',evidencias:[],dataConclusao:st==='concluido'?nowStamp():'',
@@ -1811,7 +1813,7 @@ if(!guardAdmin())return;    const r=S.responsaveis[i];if(!r)return;
     this.toast('Preparando Excel…');
     const build=()=>{
       const XLSX=window.XLSX;const wb=XLSX.utils.book_new();
-      const crono=this.filteredAtivs().map(a=>({ID:a.id,Etapa:a.etapa,Atividade:a.atividade,Descrição:a.descricao,Início:fmtFull(a.dataInicio),Prazo:fmtFull(a.prazo),'Responsável':nomes(a.responsavelExec),'Área resp.':a.areaResponsavel,'Área forn.':a.areaFornecedora,'Envio':nomes(a.responsavelEnvio),Prioridade:a.prioridade,Contas:a.contas.join(', '),Status:STATUS[effStatus(a)].lbl,'Conclusão':fmtFull(a.dataConclusao)}));
+      const crono=this.filteredAtivs().map(a=>({ID:a.id,Etapa:a.etapa,Atividade:a.atividade,Descrição:a.descricao,Início:fmtFull(a.dataInicio),Prazo:fmtFull(a.prazo),'Dia útil':a.prazoDiaUtil||'','Responsável':nomes(a.responsavelExec),'Área resp.':a.areaResponsavel,'Área forn.':a.areaFornecedora,'Envio':nomes(a.responsavelEnvio),Prioridade:a.prioridade,Contas:a.contas.join(', '),Status:STATUS[effStatus(a)].lbl,'Conclusão':fmtFull(a.dataConclusao)}));
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(crono),'Cronograma');
       const pend=this.filteredAtivs().filter(a=>effStatus(a)!=='concluido').map(a=>({Atividade:a.atividade,Responsável:nomes(a.responsavelExec),Prazo:fmtFull(a.prazo),Status:STATUS[effStatus(a)].lbl}));
       XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(pend),'Pendências');
