@@ -1665,9 +1665,10 @@ const App={
     if(!guardAdmin())return;
     if(!rows||!rows.length){this.toast('Planilha vazia.');return;}
     let hi=rows.findIndex(r=>r.some(c=>/nome/i.test(c))&&r.some(c=>/mail/i.test(c)));if(hi<0)hi=0;
-    const head=rows[hi].map(c=>(c||'').toString().toLowerCase());
-    const col=(...keys)=>{for(const k of keys){const idx=head.findIndex(h=>h.includes(k));if(idx>=0)return idx;}return -1;};
-    const cN=col('nome'),cC=col('cargo'),cA=col('área','area'),cE=col('mail'),cG=col('gestor'),cAd=col('admin');
+    const norm=v=>(v||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    const head=rows[hi].map(norm);
+    const col=(...keys)=>{for(const k of keys){const kk=norm(k);const idx=head.findIndex(h=>h.includes(kk));if(idx>=0)return idx;}return -1;};
+    const cN=col('nome'),cC=col('cargo'),cA=col('area'),cE=col('mail'),cG=col('gestor'),cAd=col('admin');
     let add=0;
     for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r)continue;
       const nome=(cN>=0?r[cN]:'').toString().trim();const email=(cE>=0?r[cE]:'').toString().trim();
@@ -1707,11 +1708,12 @@ const App={
     if(!guardAdmin())return;
     if(!rows||!rows.length){this.toast('Planilha vazia.');return;}
     let hi=rows.findIndex(r=>r.some(c=>/atividade/i.test(c))&&r.some(c=>/prazo/i.test(c)));if(hi<0)hi=0;
-    const head=rows[hi].map(c=>(c||'').toString().toLowerCase());
-    const col=(...keys)=>{for(const k of keys){const idx=head.findIndex(h=>h.includes(k));if(idx>=0)return idx;}return -1;};
-    const cAtiv=col('atividade'),cEtapa=col('etapa'),cDesc=col('descri'),cIni=col('início','inicio'),cPz=col('prazo'),
-          cResp=col('responsá','responsa'),cAr=col('área resp','area resp'),cArF=col('área forn','area forn'),
-          cEnv=col('envio'),cPrio=col('prioridade'),cContas=col('conta'),cStatus=col('status'),cDU=col('dia útil','dia util','diautil');
+    const norm=v=>(v||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+    const head=rows[hi].map(norm);
+    const col=(...keys)=>{for(const k of keys){const kk=norm(k);const idx=head.findIndex(h=>h.includes(kk));if(idx>=0)return idx;}return -1;};
+    const cAtiv=col('atividade'),cEtapa=col('etapa'),cDesc=col('descri'),cIni=col('inicio'),cPz=col('prazo'),
+          cResp=col('responsavel'),cAr=col('area resp'),cArF=col('area forn'),
+          cEnv=col('envio'),cPrio=col('prioridade'),cContas=col('conta'),cStatus=col('status'),cDU=col('dia util','diautil');
     const stKey={};Object.keys(STATUS).forEach(k=>stKey[STATUS[k].lbl.toLowerCase()]=k);
     const lista=[];
     for(let i=hi+1;i<rows.length;i++){const r=rows[i];if(!r)continue;
