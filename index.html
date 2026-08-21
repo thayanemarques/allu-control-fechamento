@@ -97,6 +97,12 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--txt)}
 .btn-icon.danger:hover{border-color:var(--vermelho);color:var(--vermelho);background:#fff}
 .tbl th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 .tbl th.sortable:hover{color:var(--verde-d)}
+.colsel{position:relative;display:inline-block}
+.colsel summary{list-style:none;cursor:pointer}
+.colsel summary::-webkit-details-marker{display:none}
+.colsel-panel{position:absolute;z-index:50;top:110%;right:0;background:#fff;border:1px solid var(--linha);border-radius:12px;box-shadow:0 10px 30px rgba(46,47,57,.14);padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;min-width:280px}
+.colsel-panel label{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer}
+.colsel-panel input{accent-color:var(--verde);width:15px;height:15px}
 .login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(1200px 600px at 50% -10%,rgba(39,174,96,.12),transparent),var(--off);padding:20px}
 .login-card{width:100%;max-width:380px;background:#fff;border:1px solid var(--linha);border-radius:20px;padding:34px 30px;box-shadow:0 20px 60px rgba(46,47,57,.12);text-align:center}
 .login-logo{width:52px;height:52px;border-radius:14px;background:var(--verde);color:#fff;font-weight:800;font-size:26px;display:grid;place-items:center;margin:0 auto 16px}
@@ -997,6 +1003,7 @@ const App={
     const f=cronoFilters;const etapas=[...new Set(ativs().map(a=>a.etapa))];
     const rows=this.sortAtivs(this.filteredAtivs());
     const S_ORT=cronoSort;const seta=k=>S_ORT.by===k?(S_ORT.dir==='asc'?' ▲':' ▼'):'';
+    const vis=this.visCols();const cols=this.cronoColDefs().filter(c=>vis.includes(c.key));
     const opt=(arr,sel)=>arr.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`).join('');
     return `
       <div class="page-head"><div><h1>Cronograma de fechamento</h1><p>${rows.length} atividade(s) · ${comp().label}</p></div>
@@ -1015,28 +1022,40 @@ const App={
         <button class="chip ${f.atrasadas?'on':''}" onclick="App.setFilter('atrasadas',${!f.atrasadas})">🔴 Somente atrasadas</button>
         <select onchange="App.setSortBy(this.value)" title="Ordenar por">${[['prazo','Prazo'],['prio','Prioridade'],['diautil','Dia útil'],['status','Status'],['etapa','Etapa'],['resp','Responsável']].map(o=>`<option value="${o[0]}" ${cronoSort.by===o[0]?'selected':''}>Ordenar: ${o[1]}</option>`).join('')}</select>
         <button class="chip" onclick="App.toggleSortDir()">${cronoSort.dir==='asc'?'↑ crescente':'↓ decrescente'}</button>
+        <details class="colsel"><summary class="chip">⚙ Colunas</summary><div class="colsel-panel">${this.cronoColDefs().map(c=>`<label><input type="checkbox" ${vis.includes(c.key)?'checked':''} onchange="App.toggleCol('${c.key}')"> ${c.label}</label>`).join('')}</div></details>
         ${(f.area||f.resp||f.status||f.prio||f.etapa||f.atrasadas||f.q)?`<button class="chip" onclick="App.clearFilters()">✕ Limpar</button>`:''}
       </div>
 
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th class="sortable" onclick="App.setSortBy('id')">ID${seta('id')}</th><th class="sortable" onclick="App.setSortBy('etapa')">Etapa${seta('etapa')}</th><th class="sortable" onclick="App.setSortBy('atividade')">Atividade${seta('atividade')}</th><th class="sortable" onclick="App.setSortBy('resp')">Responsável${seta('resp')}</th><th>Área forn.</th><th class="sortable" onclick="App.setSortBy('prazo')">Prazo${seta('prazo')}</th><th class="sortable" onclick="App.setSortBy('prio')">Prio${seta('prio')}</th><th>Contas</th><th class="sortable" onclick="App.setSortBy('status')">Status${seta('status')}</th></tr></thead>
-          <tbody>${rows.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">
-            <td class="mono cell-sub">#${String(a.id).padStart(2,'0')}</td>
-            <td><span class="cell-sub">${a.etapa}</span></td>
-            <td class="cell-strong">${a.atividade}${a.dependencias.length?' <span class="cell-sub">⛓</span>':''}</td>
-            <td>${nomes(a.responsavelExec)}</td>
-            <td class="cell-sub">${a.areaFornecedora}</td>
-            <td class="cell-strong">${this.prazoTag(a)}</td>
-            <td><span class="prio ${a.prioridade}">${a.prioridade}</span></td>
-            <td>${a.contas.length?`<span class="tag">${a.contas[0]}${a.contas.length>1?' +'+(a.contas.length-1):''}</span>`:'<span class="cell-sub">—</span>'}</td>
-            <td>${stPill(a)}</td></tr>`).join('')||'<tr><td colspan=10 class="empty"><div class="ee">🔍</div><h3>Nenhuma atividade</h3>Ajuste os filtros.</td></tr>'}</tbody>
+          <thead><tr>${cols.map(c=>c.sort?`<th class="sortable" onclick="App.setSortBy('${c.sort}')">${c.label}${seta(c.sort)}</th>`:`<th>${c.label}</th>`).join('')}</tr></thead>
+          <tbody>${rows.map(a=>`<tr class="clk" onclick="App.openAtiv(${a.id})">${cols.map(c=>c.render(a)).join('')}</tr>`).join('')||`<tr><td colspan=${cols.length} class="empty"><div class="ee">🔍</div><h3>Nenhuma atividade</h3>Ajuste os filtros.</td></tr>`}</tbody>
         </table>
       </div>`;
   },
   setFilter(k,v){cronoFilters[k]=v;this.go('cronograma');},
   clearFilters(){cronoFilters={area:'',resp:'',status:'',prio:'',etapa:'',atrasadas:false,q:''};document.getElementById('globalSearch').value='';this.go('cronograma');},
   setSortBy(k){if(cronoSort.by===k){cronoSort.dir=cronoSort.dir==='asc'?'desc':'asc';}else{cronoSort.by=k;cronoSort.dir='asc';}this.go('cronograma');},
+  cronoColDefs(){return [
+    {key:'id',label:'ID',sort:'id',render:a=>`<td class="mono cell-sub">#${String(a.id).padStart(2,'0')}</td>`},
+    {key:'etapa',label:'Etapa',sort:'etapa',render:a=>`<td><span class="cell-sub">${a.etapa}</span></td>`},
+    {key:'atividade',label:'Atividade',sort:'atividade',render:a=>`<td class="cell-strong">${a.atividade}${a.dependencias.length?' <span class="cell-sub">⛓</span>':''}</td>`},
+    {key:'descricao',label:'Descrição',sort:null,render:a=>`<td class="cell-sub">${a.descricao||'—'}</td>`},
+    {key:'resp',label:'Responsável',sort:'resp',render:a=>`<td>${nomes(a.responsavelExec)}</td>`},
+    {key:'envio',label:'Envio',sort:null,render:a=>`<td class="cell-sub">${nomes(a.responsavelEnvio)}</td>`},
+    {key:'areaResp',label:'Área resp.',sort:null,render:a=>`<td class="cell-sub">${a.areaResponsavel}</td>`},
+    {key:'areaForn',label:'Área forn.',sort:null,render:a=>`<td class="cell-sub">${a.areaFornecedora}</td>`},
+    {key:'inicio',label:'Início',sort:'dataInicio',render:a=>`<td class="cell-sub">${fmt(a.dataInicio)}</td>`},
+    {key:'prazo',label:'Prazo',sort:'prazo',render:a=>`<td class="cell-strong">${this.prazoTag(a)}</td>`},
+    {key:'diautil',label:'Dia útil',sort:'diautil',render:a=>`<td class="cell-sub">${a.prazoDiaUtil?a.prazoDiaUtil+'º dia útil':'—'}</td>`},
+    {key:'prio',label:'Prio',sort:'prio',render:a=>`<td><span class="prio ${a.prioridade}">${a.prioridade}</span></td>`},
+    {key:'contas',label:'Contas',sort:null,render:a=>`<td>${a.contas.length?`<span class="tag">${a.contas[0]}${a.contas.length>1?' +'+(a.contas.length-1):''}</span>`:'<span class="cell-sub">—</span>'}</td>`},
+    {key:'status',label:'Status',sort:'status',render:a=>`<td>${stPill(a)}</td>`},
+  ];},
+  visCols(){const def=['id','etapa','atividade','resp','areaForn','prazo','diautil','prio','contas','status'];return (S.cronoColsVis&&S.cronoColsVis.length)?S.cronoColsVis:def;},
+  toggleCol(k){let v=(S.cronoColsVis&&S.cronoColsVis.length)?S.cronoColsVis.slice():['id','etapa','atividade','resp','areaForn','prazo','diautil','prio','contas','status'];
+    if(v.includes(k)){if(v.length<=1)return;v=v.filter(x=>x!==k);}else{v.push(k);}
+    S.cronoColsVis=v;save();this.go('cronograma');},
   toggleSortDir(){cronoSort.dir=cronoSort.dir==='asc'?'desc':'asc';this.go('cronograma');},
   sortAtivs(rows){
     const by=cronoSort.by, dir=cronoSort.dir==='desc'?-1:1;
