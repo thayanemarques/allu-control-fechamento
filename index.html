@@ -916,7 +916,7 @@ const App={
         </div>
       </div>`;
   },
-  prazoTag(a){const t=today();const dc=a.prazo<t?`<span style="color:var(--vermelho)">${fmt(a.prazo)}</span>`:a.prazo===t?`<span style="color:var(--amarelo)">${fmt(a.prazo)} · hoje</span>`:a.prazo===addDays(t,1)?`<span style="color:var(--azul)">${fmt(a.prazo)} · amanhã</span>`:fmt(a.prazo);return a.prazoDiaUtil?`<b>${a.prazoDiaUtil}º dia útil</b><div class="cell-sub" style="font-weight:400">${dc}</div>`:dc;},
+  prazoTag(a){const t=today();return a.prazo<t?`<span style="color:var(--vermelho)">${fmt(a.prazo)}</span>`:a.prazo===t?`<span style="color:var(--amarelo)">${fmt(a.prazo)} · hoje</span>`:a.prazo===addDays(t,1)?`<span style="color:var(--azul)">${fmt(a.prazo)} · amanhã</span>`:fmt(a.prazo);},
 
   /* ====================================================================
      DASHBOARD EXECUTIVO
